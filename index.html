@@ -33,29 +33,73 @@
                 cards: [],
                 players: [
                     {
+                        id: 0,
                         name: 'player1',
                         com: false,
                         points: 20,
+                        cardsInHand: [],
+                        lastPlayedCardIndex: null
                     },
                     {
+                        id: 1,
                         name: 'player12',
                         com: true,
                         points: 20,
+                        cardsInHand: [],
+                        lastPlayedCardIndex: null
                     },
                     {
+                        id: 2,
                         name: 'player3',
                         com: true,
                         points: 20,
+                        cardsInHand: [],
+                        lastPlayedCardIndex: null
                     },
                     {
+                        id: 3,
                         name: 'player4',
                         com: true,
                         points: 20,
+                        cardsInHand: [],
+                        lastPlayedCardIndex: null
                     },
-                ]
+                ],
+                currentTrick: 1,
+                currentTrumpSuitChoicePlayerIndex: 0,
+                currentPlayerIndex: 0,
+                phases: [
+                    {
+                        id: 0,
+                        name: 'First draw',
+                    },
+                    {
+                        id: 1,
+                        name: 'Trump suit choice',
+                    },
+                    {
+                        id: 2,
+                        name: 'Second draw',
+                    },
+                    {
+                        id: 3,
+                        name: 'Exchange',
+                    },
+                    {
+                        id: 4,
+                        name: 'Play or pass choice',
+                    },
+                    {
+                        id: 5,
+                        name: 'Game',
+                    }
+                ],
+                currentPhaseIndex: 0,
+                cardsInDeck: [],
             },
-            mounted() {
+            mounted() { debugger;
                 this.generateCards();
+                this.resetGame();
             },
             methods: {
                 generateCards() {
@@ -71,6 +115,74 @@
                             });
                         }
                     });
+                },
+                resetGame() {
+                    this.currentTrumpSuitChoicePlayerIndex = this.getRandomArbitrary(0, 3);
+                    this.players.forEach(p => {
+                        p.points = 20;
+                    });
+                    this.goToNextTurn(); 
+                },
+                goToNextTurn() {
+                    this.currentTrumpSuitChoicePlayerIndex++;
+                    if (this.currentTrumpSuitChoicePlayerIndex > 3) {
+                        this.currentTrumpSuitChoicePlayerIndex = 0;
+                    }
+
+                    this.currentPhaseIndex = 0;
+                    this.currentTrick = 1;
+                    this.shuffleDeck();
+                    this.players.forEach(p => {
+                        p.cardsInHand = [];
+                        p.lastPlayedCardIndex = null;
+                    });
+                    this.handleCurrentPhase();
+                },
+                shuffleDeck() {
+                    this.cardsInDeck = this.shuffle(JSON.parse(JSON.stringify(this.cards)));
+                },
+                handleCurrentPhase() {
+                    switch (this.currentPhaseIndex) {
+                        case 0: {
+                            this.players.forEach(p => {
+                                p.cardsInHand.push(this.pickNextCard());
+                                p.cardsInHand.push(this.pickNextCard());
+                            });
+                            break;
+                        }
+                    }
+                },
+                pickNextCard() {
+                    return this.cardsInDeck.pop();
+                },
+                goToNextPhase() {
+                    this.currentPhaseIndex++;
+                    if (this.currentPhaseIndex > 5) {
+                        this.currentPhaseIndex = 0;
+                    }
+
+                    this.handleCurrentPhase();
+                },
+                getRandomArbitrary(min, max) {
+                    return Math.random() * (max - min) + min;
+                },
+                shuffle(array) {
+                    var currentIndex = array.length, temporaryValue, randomIndex;
+
+                    // While there remain elements to shuffle...
+                    while (0 !== currentIndex) {
+
+                        // Pick a remaining element...
+                        randomIndex = Math.floor(Math.random() * currentIndex);
+                        currentIndex -= 1;
+
+                        // And swap it with the current element.
+                        temporaryValue = array[currentIndex];
+                        array[currentIndex] = array[randomIndex];
+                        array[randomIndex] = temporaryValue;
+                    }
+
+                    return array;
                 }
             }
         });
