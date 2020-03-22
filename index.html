@@ -26,17 +26,19 @@
                 <img v-if="trumpSuitIndex !== null" :src="'assets/img/suits/' + Object.values(suits)[trumpSuitIndex] + '.png'">
             </div>
 
-            <img v-for="(card, index) in players[3].cardsInHand" v-bind:key="'playeer3cards-' + index" 
-                src="assets/img/cards/back-hor.jpg" class="player3-card" :width="cardSize.height"
-                :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[3].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
+            <div v-if="players[3].isPlaying">
+                <img v-for="(card, index) in players[3].cardsInHand" v-bind:key="'playeer3cards-' + index" 
+                    src="assets/img/cards/back-hor.jpg" class="player3-card" :width="cardSize.height"
+                    :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[3].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
+            </div>
 
             <img v-if="currentPlayerIndex === 3" src="assets/img/arrow.png" class="position-absolute rotate90" 
                 :style="'left: ' + (cardSize.height + 30) + 'px; top: ' + ((window.innerHeight / 2) - 29) + 'px;'">
 
             <div id="player2-cards">
                 <div style="position: relative; left: -50%;">
-                    <div class="row justify-content-center">
-                        <img v-for="(card, index) in players[2].cardsInHand" v-bind:key="'playeer2cards-' +  index" 
+                    <div v-if="players[2].isPlaying" class="row justify-content-center">
+                        <img v-for="(card, index) in players[2].cardsInHand" v-bind:key="'player2cards-' +  index" 
                             src="assets/img/cards/back.jpg" class="card-padding-x" :height="cardSize.height">
                     </div>
                     <div v-if="currentPlayerIndex === 2" class="row justify-content-center" style="margin-top: 20px;">
@@ -50,8 +52,8 @@
                     <div v-if="currentPlayerIndex === 0" class="row justify-content-center" style="margin-bottom: 20px;">
                         <img src="assets/img/arrow.png">
                     </div>
-                    <div class="row justify-content-center">
-                        <div v-for="(card, index) in players[0].cardsInHand" v-bind:key="'playeer1cards-' +  index"
+                    <div v-if="players[0].isPlaying" class="row justify-content-center">
+                        <div v-for="(card, index) in players[0].cardsInHand" v-bind:key="'player1cards-' +  index"
                             :class="{'selected-card': card.selected}">
                             <img :height="cardSize.height"
                                 :src="'assets/img/cards/' + card.name + '.png'" class="card-padding-x"
@@ -61,9 +63,11 @@
                 </div>
             </div>
 
-            <img v-for="(card, index) in players[1].cardsInHand" v-bind:key="'playeer0cards-' +  index" 
-                src="assets/img/cards/back-hor.jpg" class="player1-card" :width="cardSize.height"
-                :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[1].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
+            <div v-if="players[1].isPlaying">
+                <img v-for="(card, index) in players[1].cardsInHand" v-bind:key="'playeer0cards-' +  index" 
+                    src="assets/img/cards/back-hor.jpg" class="player1-card" :width="cardSize.height"
+                    :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[1].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
+            </div>
 
             <img v-if="currentPlayerIndex === 1" src="assets/img/arrow.png" class="position-absolute rotate270" 
                 :style="'right: ' + (cardSize.height + 30) + 'px; top: ' + ((window.innerHeight / 2) - 29) + 'px;'">
@@ -86,7 +90,7 @@
                         <span class="font-weight-bold text-white col-auto">Nipe trunfo</span>
                     </div>
 
-                    <div v-if="!exchangeCardsPressed && currentPhaseIndex === 3">
+                    <div v-if="!exchangeCardsButtonPressed && currentPhaseIndex === 3">
                         <div class="row justify-content-center">
                             <span class="font-weight-bold text-white col-auto">
                                 Selecione até 3 cartas para trocar
@@ -95,6 +99,20 @@
                         <div class="row justify-content-center pt-3">
                             <button @click="exchangePlayerCards()" type="button" 
                                 class="btn btn-secondary col-auto">Continuar</button>
+                        </div>
+                    </div>
+
+                    <div v-if="!playOrPassButtonPressed && currentPhaseIndex === 4">
+                        <div class="row justify-content-center">
+                            <span class="font-weight-bold text-white col-auto">
+                                Deseja jogar ou passar a rodada?
+                            </span>
+                        </div>
+                        <div class="row justify-content-center pt-3">
+                            <button @click="playOrPass(false)" type="button" 
+                                class="btn btn-danger col-auto mx-3">Passar</button>
+                            <button @click="playOrPass(true)" type="button" 
+                                class="btn btn-primary col-auto mx-3">Jogar</button>
                         </div>
                     </div>
                 </div>
@@ -128,7 +146,8 @@
                         com: false,
                         points: 20,
                         cardsInHand: [],
-                        lastPlayedCardIndex: null
+                        lastPlayedCardIndex: null,
+                        isPlaying: true
                     },
                     {
                         id: 1,
@@ -136,7 +155,8 @@
                         com: true,
                         points: 20,
                         cardsInHand: [],
-                        lastPlayedCardIndex: null
+                        lastPlayedCardIndex: null,
+                        isPlaying: true
                     },
                     {
                         id: 2,
@@ -144,7 +164,8 @@
                         com: true,
                         points: 20,
                         cardsInHand: [],
-                        lastPlayedCardIndex: null
+                        lastPlayedCardIndex: null,
+                        isPlaying: true
                     },
                     {
                         id: 3,
@@ -152,7 +173,8 @@
                         com: true,
                         points: 20,
                         cardsInHand: [],
-                        lastPlayedCardIndex: null
+                        lastPlayedCardIndex: null,
+                        isPlaying: true
                     },
                 ],
                 currentTrick: 1,
@@ -195,7 +217,8 @@
                 sleepInterval: 500,
                 sound: null,
                 turn: 0,
-                exchangeCardsPressed: false
+                exchangeCardsButtonPressed: false,
+                playOrPassButtonPressed: false
             },
             mounted() {
                 this.window = window;
@@ -236,7 +259,8 @@
                     this.showToast('O jogador ' + (this.currentTrumpSuitChoicePlayerIndex + 1) + ' irá escolher o nipe trunfo');
 
                     this.turn++;
-                    this.exchangeCardsPressed = false;
+                    this.exchangeCardsButtonPressed = false;
+                    this.playOrPassButtonPressed = false;
                     this.currentPhaseIndex = 0;
                     this.currentTrick = 1;
                     this.trumpSuitIndex = null;
@@ -244,6 +268,7 @@
                     this.players.forEach(p => {
                         p.cardsInHand = [];
                         p.lastPlayedCardIndex = null;
+                        p.isPlaying = true;
                     });
 
                     this.sleep(2).then(() => {
@@ -368,7 +393,7 @@
                 },
                 exchangePlayerCards() {
                     this.playSound();
-                    this.exchangeCardsPressed = true;
+                    this.exchangeCardsButtonPressed = true;
                     let exchangedPlayers = [];
 
                     for (let i = 0; i < this.players.length; i++) {
@@ -432,6 +457,12 @@
                     }
 
                     return highestCardIndex;
+                },
+                playOrPass(value) {
+                    this.playSound();
+                    this.playOrPassButtonPressed = true;
+                    this.players[0].isPlaying = value;
+                    this.goToNextPhase();
                 },
                 reloadCardsInHand(index) {
                     let cardsInHand = this.players[index].cardsInHand;
