@@ -52,7 +52,7 @@
 
             <div class="center-div">
                 <div style="position: relative; left: -50%; top: -50%;">
-                    <div v-if="currentTrumpSuitChoicePlayerIndex === 0 && currentPhaseIndex === 1">
+                    <div v-if="currentTrumpSuitChoicePlayerIndex === 0 && currentPhaseIndex === 1 && trumpSuitIndex === null">
                         <img v-for="(suit, index) in Object.values(suits)" v-bind:key="'suits-' + index"
                             :src="'assets/img/suits/' + suit + '.png'" class="suit-button"
                             @click="selectTrumpSuit(index)">
@@ -61,7 +61,7 @@
                         </div>
                     </div>
 
-                    <div v-if="currentPhaseIndex === 2">
+                    <div v-if="currentPhaseIndex <= 2 && trumpSuitIndex !== null">
                         <div class="row justify-content-center pt-3">
                             <img :src="'assets/img/suits/' + Object.values(suits)[trumpSuitIndex] + '.png'">
                         </div>
@@ -172,6 +172,7 @@
             },
             mounted() {
                 this.window = window;
+                this.setCardSize();
                 this.setSound();
                 this.generateCards();
                 this.resetGame();
@@ -199,24 +200,25 @@
                     this.goToNextTurn(); 
                 },
                 goToNextTurn() {
-                    this.sleep(1).then(() => {
-                        this.playSound();
-                        this.currentTrumpSuitChoicePlayerIndex++;
-                        if (this.currentTrumpSuitChoicePlayerIndex > 3) {
-                            this.currentTrumpSuitChoicePlayerIndex = 0;
-                        }
-                        this.currentPlayerIndex = this.currentTrumpSuitChoicePlayerIndex;
-                        this.showToast('O jogador ' + (this.currentTrumpSuitChoicePlayerIndex + 1) + ' irá escolher o nipe trunfo');
+                    this.playSound();
+                    this.currentTrumpSuitChoicePlayerIndex++;
+                    if (this.currentTrumpSuitChoicePlayerIndex > 3) {
+                        this.currentTrumpSuitChoicePlayerIndex = 0;
+                    }
+                    this.currentPlayerIndex = this.currentTrumpSuitChoicePlayerIndex;
+                    this.showToast('O jogador ' + (this.currentTrumpSuitChoicePlayerIndex + 1) + ' irá escolher o nipe trunfo');
 
-                        this.turn++;
-                        this.currentPhaseIndex = 0;
-                        this.currentTrick = 1;
-                        this.trumpSuitIndex = null;
-                        this.shuffleDeck();
-                        this.players.forEach(p => {
-                            p.cardsInHand = [];
-                            p.lastPlayedCardIndex = null;
-                        });
+                    this.turn++;
+                    this.currentPhaseIndex = 0;
+                    this.currentTrick = 1;
+                    this.trumpSuitIndex = null;
+                    this.shuffleDeck();
+                    this.players.forEach(p => {
+                        p.cardsInHand = [];
+                        p.lastPlayedCardIndex = null;
+                    });
+
+                    this.sleep(2).then(() => {
                         this.handleCurrentPhase();
                     });
                 },
@@ -245,9 +247,7 @@
                         }
                         case 1: {
                             if (this.currentTrumpSuitChoicePlayerIndex !== 0) {
-                                this.sleep().then(() => {
-                                    this.selectTrumpSuit(this.getRandomArbitrary(0, 3));
-                                });
+                                this.selectTrumpSuit(this.getRandomArbitrary(0, 3));
                             }
 
                             break;
@@ -276,16 +276,19 @@
                         }
                     }
                 },
-                pickNextCard() {this.playSound();
+                pickNextCard() {
+                    this.playSound();
                     return this.cardsInDeck.pop();
                 },
                 goToNextPhase() {
-                    this.currentPhaseIndex++;
-                    if (this.currentPhaseIndex > 5) {
-                        this.currentPhaseIndex = 0;
-                    }
+                    this.sleep(2).then(() => {
+                        this.currentPhaseIndex++;
+                        if (this.currentPhaseIndex > 5) {
+                            this.currentPhaseIndex = 0;
+                        }
 
-                    this.handleCurrentPhase();
+                        this.handleCurrentPhase();
+                    });
                 },
                 selectTrumpSuit(index) {this.playSound();
                     this.trumpSuitIndex = index;
@@ -349,6 +352,11 @@
                 playSound() {
                     this.sound.pause();
                     this.sound.play();
+                },
+                setCardSize() {
+                    let oldHeight = this.cardSize.height;
+                    this.cardSize.height = (this.window.innerHeight / 4) - (50 / 4);
+                    this.cardSize.width = (this.cardSize.height * this.cardSize.width) / oldHeight;
                 }
             }
         });
