@@ -275,9 +275,9 @@
                         }
                         case 1: {
                             if (this.currentTrumpSuitChoicePlayerIndex !== 0) {
-                                let highestSuitInHand = this.getHighestCardInHand(
-                                    this.currentTrumpSuitChoicePlayerIndex
-                                ).suit;
+                                let highestSuitInHand = this.players[this.currentTrumpSuitChoicePlayerIndex].cardsInHand[
+                                    this.getHighestCardInHandIndex(this.currentTrumpSuitChoicePlayerIndex)
+                                ].suit;
 
                                 this.selectTrumpSuit(Object.values(this.suits).findIndex(s => s === highestSuitInHand));
                             }
@@ -396,16 +396,18 @@
                         });
                     });
                 },
-                getHighestCardInHand(index) {
-                    let highestCard = { power: 0 };
+                getHighestCardInHandIndex(index) {
+                    let highestCardIndex = 0;
 
-                    this.players[index].cardsInHand.forEach(c => {
-                        if (c.power > highestCard.power) {
-                            highestCard = c;
+                    for (let i = 1; i < this.players[index].cardsInHand.length; i++) {
+                        let c = this.players[index].cardsInHand[i];
+                        
+                        if (c.power > this.players[index].cardsInHand[highestCardIndex].power) {
+                            highestCardIndex = i;
                         }
-                    });
+                    }
 
-                    return highestCard;
+                    return highestCardIndex;
                 },
                 reloadCardsInHand(index) {
                     let cardsInHand = this.players[index].cardsInHand;
