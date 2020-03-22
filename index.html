@@ -35,6 +35,10 @@
             <img v-if="currentPlayerIndex === 3" src="assets/img/arrow.png" class="position-absolute rotate90" 
                 :style="'left: ' + (cardSize.height + 30) + 'px; top: ' + ((window.innerHeight / 2) - 29) + 'px;'">
 
+            <img v-if="players[3].currentCard" :src="'assets/img/cards/' + players[3].currentCard.name + '.png'" 
+                class="position-absolute" :height="cardSize.height"
+                :style="'top: ' + ((window.innerHeight / 2) - (cardSize.height / 2)) + 'px;left: ' + ((window.innerWidth / 2) - (cardSize.width / 2) - cardSize.width - 40) + 'px;'">
+
             <div id="player2-cards">
                 <div style="position: relative; left: -50%;">
                     <div v-if="players[2].isPlaying" class="row justify-content-center">
@@ -44,11 +48,17 @@
                     <div v-if="currentPlayerIndex === 2" class="row justify-content-center" style="margin-top: 20px;">
                         <img src="assets/img/arrow.png" class="rotate180">
                     </div>
+                    <div v-if="players[2].currentCard" class="row justify-content-center" style="margin-top: 10px;">
+                        <img :src="'assets/img/cards/' + players[2].currentCard.name + '.png'" :height="cardSize.height">
+                    </div>
                 </div>
             </div>
 
             <div id="player0-cards">
                 <div style="position: relative; left: -50%;">
+                    <div v-if="players[0].currentCard" class="row justify-content-center" style="margin-bottom: 10px;">
+                        <img :src="'assets/img/cards/' + players[0].currentCard.name + '.png'" :height="cardSize.height">
+                    </div>
                     <div v-if="currentPlayerIndex === 0" class="row justify-content-center" style="margin-bottom: 20px;">
                         <img src="assets/img/arrow.png">
                     </div>
@@ -71,6 +81,10 @@
 
             <img v-if="currentPlayerIndex === 1" src="assets/img/arrow.png" class="position-absolute rotate270" 
                 :style="'right: ' + (cardSize.height + 30) + 'px; top: ' + ((window.innerHeight / 2) - 29) + 'px;'">
+
+            <img v-if="players[1].currentCard" :src="'assets/img/cards/' + players[1].currentCard.name + '.png'" 
+                class="position-absolute" :height="cardSize.height"
+                :style="'top: ' + ((window.innerHeight / 2) - (cardSize.height / 2)) + 'px;right: ' + ((window.innerWidth / 2) - (cardSize.width / 2) - cardSize.width - 40) + 'px;'">
 
             <div class="center-div">
                 <div style="position: relative; left: -50%; top: -50%;">
