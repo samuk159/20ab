@@ -11,6 +11,47 @@
 </head>
 <body>
     <div id="app">
+        <div style="height: 100vh;">
+            <!-- <div style="position: relative; left: -50%;">
+                <div class="row justify-content-center"> -->
+                    <img v-for="(card, index) in players[3].cardsInHand" v-bind:key="index" 
+                        src="assets/img/cards/back-hor.jpg" class="player3-card" 
+                        :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[3].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
+                <!-- </div>
+            </div> -->
+
+            <div class="row" style="height: 100vh;">
+                <!-- <div style="display: flex; flex-direction: column; align-content: center;">
+                    <img v-for="(card, index) in players[3].cardsInHand" 
+                     v-bind:key="index" src="assets/img/cards/back.jpg">
+                </div> -->
+                <!-- <div class="col">
+                    <div class="row">
+                        <div v-for="(card, index) in players[3].cardsInHand" v-bind:key="index"  class="col-12">
+                            <img src="assets/img/cards/back.jpg" class="py-1 rotate90">
+                        </div>
+                    </div>
+                </div> -->
+                <div class="col">
+                    <div class="row justify-content-center" style="margin-top: 10px;">
+                        <img v-for="(card, index) in players[2].cardsInHand" v-bind:key="index" 
+                            src="assets/img/cards/back.jpg" class="card-padding-x">
+                    </div>
+                    <!-- <div v-if="currentPlayerIndex === 0 && currentPhaseIndex === 1">
+            
+                    </div> -->
+                </div>
+            </div>
+
+            <div id="player0-cards">
+                <div style="position: relative; left: -50%;">
+                    <div class="row justify-content-center">
+                        <img v-for="(card, index) in players[0].cardsInHand" v-bind:key="index" 
+                            :src="'assets/img/cards/' + card.name + '.png'" class="card-padding-x">
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
@@ -96,8 +137,14 @@
                 ],
                 currentPhaseIndex: 0,
                 cardsInDeck: [],
+                cardSize: {
+                    width: 129,
+                    height: 200
+                },
+                window
             },
-            mounted() { debugger;
+            mounted() {
+                this.window = window;
                 this.generateCards();
                 this.resetGame();
             },
@@ -147,6 +194,9 @@
                             this.players.forEach(p => {
                                 p.cardsInHand.push(this.pickNextCard());
                                 p.cardsInHand.push(this.pickNextCard());
+                                p.cardsInHand.push(this.pickNextCard());
+                                p.cardsInHand.push(this.pickNextCard());
+                                p.cardsInHand.push(this.pickNextCard());
                             });
                             break;
                         }
@@ -164,7 +214,7 @@
                     this.handleCurrentPhase();
                 },
                 getRandomArbitrary(min, max) {
-                    return Math.random() * (max - min) + min;
+                    return Math.floor(Math.random() * (max - min + 1)) + min;
                 },
                 shuffle(array) {
                     var currentIndex = array.length, temporaryValue, randomIndex;

@@ -3,3 +3,33 @@ body {
     background-repeat: no-repeat;
     background-size: cover;
 }
+
+#player0-cards {
+    position:absolute;
+    bottom: 10px;
+    left: 50%;
+}
+
+/* #player3-cards {
+    position:absolute;
+    left:0;
+    top: 50%;
+} */
+
+.rotate90 {
+    -webkit-transform: rotate(90deg);
+    -moz-transform: rotate(90deg);
+    -o-transform: rotate(90deg);
+    -ms-transform: rotate(90deg);
+    transform: rotate(90deg);
+}
+
+.player3-card {
+    position:absolute;
+    left: 10px;
+}
+
+.card-padding-x {
+    padding-left: 2px;
+    padding-right: 2px;
+}
