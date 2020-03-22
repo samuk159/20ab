@@ -33,6 +33,10 @@
                     </div>
                 </div>
             </div>
+
+            <img v-for="(card, index) in players[1].cardsInHand" v-bind:key="index" 
+                src="assets/img/cards/back-hor.jpg" class="player1-card" :width="cardSize.height"
+                :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[1].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
         </div>
     </div>
 

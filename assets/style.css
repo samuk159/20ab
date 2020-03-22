@@ -18,6 +18,11 @@ body {
     transform: rotate(90deg);
 }
 
+.player1-card {
+    position:absolute;
+    right: 10px;
+}
+
 .player3-card {
     position:absolute;
     left: 10px;
