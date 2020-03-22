@@ -12,14 +12,19 @@
 <body>
     <div id="app">
         <div style="height: 100vh;">
-            <img v-for="(card, index) in players[3].cardsInHand" v-bind:key="index" 
+            <div class="m-2">
+                <span v-for="(player, index) in players" v-bind:key="'playeers-points-' + index" 
+                    class="font-weight-bold text-white">Player {{index + 1}}: {{player.points}}<br></span>
+            </div>
+
+            <img v-for="(card, index) in players[3].cardsInHand" v-bind:key="'playeer3cards-' + index" 
                 src="assets/img/cards/back-hor.jpg" class="player3-card" :width="cardSize.height"
                 :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[3].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
 
-            <div class="row" style="height: 100vh;">
-                <div class="col">
-                    <div class="row justify-content-center" style="margin-top: 10px;">
-                        <img v-for="(card, index) in players[2].cardsInHand" v-bind:key="index" 
+            <div id="player2-cards">
+                <div style="position: relative; left: -50%;">
+                    <div class="row justify-content-center">
+                        <img v-for="(card, index) in players[2].cardsInHand" v-bind:key="'playeer2cards-' +  index" 
                             src="assets/img/cards/back.jpg" class="card-padding-x" :height="cardSize.height">
                     </div>
                 </div>
@@ -28,15 +33,26 @@
             <div id="player0-cards">
                 <div style="position: relative; left: -50%;">
                     <div class="row justify-content-center">
-                        <img v-for="(card, index) in players[0].cardsInHand" v-bind:key="index" :height="cardSize.height"
+                        <img v-for="(card, index) in players[0].cardsInHand" v-bind:key="'playeer1cards-' +  index" :height="cardSize.height"
                             :src="'assets/img/cards/' + card.name + '.png'" class="card-padding-x">
                     </div>
                 </div>
             </div>
 
-            <img v-for="(card, index) in players[1].cardsInHand" v-bind:key="index" 
+            <img v-for="(card, index) in players[1].cardsInHand" v-bind:key="'playeer0cards-' +  index" 
                 src="assets/img/cards/back-hor.jpg" class="player1-card" :width="cardSize.height"
                 :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[1].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
+
+            <div v-if="currentTrumpSuitChoicePlayerIndex === 0 && currentPhaseIndex === 1" class="suit-div">
+                <div style="position: relative; left: -50%; top: -50%;">
+                    <img v-for="(suit, index) in Object.values(suits)" v-bind:key="'suits-' + index"
+                        :src="'assets/img/suits/' + suit + '.png'" class="suit-button"
+                        @click="selectTrumpSuit(index)">
+                    <div class="row justify-content-center pt-3">
+                        <span class="font-weight-bold text-white col-auto">Select the trump suit</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -127,7 +143,8 @@
                     width: 129 * 0.75,
                     height: 200 * 0.75
                 },
-                window
+                window,
+                trumpSuitIndex: null
             },
             mounted() {
                 this.window = window;
@@ -180,10 +197,24 @@
                             this.players.forEach(p => {
                                 p.cardsInHand.push(this.pickNextCard());
                                 p.cardsInHand.push(this.pickNextCard());
+                            });
+                            this.goToNextPhase();
+                            break;
+                        }
+                        case 1: {
+                            if (this.currentTrumpSuitChoicePlayerIndex !== 0) {
+                                this.selectTrumpSuit(this.getRandomArbitrary(0, 3));
+                            }
+
+                            break;
+                        }
+                        case 2: {
+                            this.players.forEach(p => {
                                 p.cardsInHand.push(this.pickNextCard());
                                 p.cardsInHand.push(this.pickNextCard());
                                 p.cardsInHand.push(this.pickNextCard());
                             });
+                            this.goToNextPhase();
                             break;
                         }
                     }
@@ -198,6 +229,10 @@
                     }
 
                     this.handleCurrentPhase();
+                },
+                selectTrumpSuit(index) {
+                    this.trumpSuitIndex = index;
+                    this.goToNextPhase();
                 },
                 getRandomArbitrary(min, max) {
                     return Math.floor(Math.random() * (max - min + 1)) + min;

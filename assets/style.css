@@ -10,6 +10,12 @@ body {
     left: 50%;
 }
 
+#player2-cards {
+    position:absolute;
+    top: 10px;
+    left: 50%;
+}
+
 .rotate90 {
     -webkit-transform: rotate(90deg);
     -moz-transform: rotate(90deg);
@@ -31,4 +37,15 @@ body {
 .card-padding-x {
     padding-left: 2px;
     padding-right: 2px;
+}
+
+.suit-div {
+    position:absolute;
+    left: 50%;
+    top: 50%;
+}
+
+.suit-button {
+    margin-left: 20px;
+    margin-right: 20px;
 }
