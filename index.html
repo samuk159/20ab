@@ -74,9 +74,17 @@
                         <span class="font-weight-bold text-white col-auto">Nipe trunfo</span>
                     </div>
 
-                    <span v-if="currentPhaseIndex === 3" class="font-weight-bold text-white col-auto">
-                        Selecione até 3 cartas para trocar
-                    </span>
+                    <div v-if="!exchangeCardsPressed && currentPhaseIndex === 3">
+                        <div class="row justify-content-center">
+                            <span class="font-weight-bold text-white col-auto">
+                                Selecione até 3 cartas para trocar
+                            </span>
+                        </div>
+                        <div class="row justify-content-center pt-3">
+                            <button @click="exchangePlayerCards()" type="button" 
+                                class="btn btn-secondary col-auto">Continuar</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -174,7 +182,8 @@
                 trumpSuitIndex: null,
                 sleepInterval: 500,
                 sound: null,
-                turn: 0
+                turn: 0,
+                exchangeCardsPressed: false
             },
             mounted() {
                 this.window = window;
@@ -215,6 +224,7 @@
                     this.showToast('O jogador ' + (this.currentTrumpSuitChoicePlayerIndex + 1) + ' irá escolher o nipe trunfo');
 
                     this.turn++;
+                    this.exchangeCardsPressed = false;
                     this.currentPhaseIndex = 0;
                     this.currentTrick = 1;
                     this.trumpSuitIndex = null;
@@ -316,10 +326,51 @@
                         }
                     }
                 },
+                exchangePlayerCards() {
+                    this.playSound();
+                    this.exchangeCardsPressed = true;
+                    let exchangedPlayers = [];
+
+                    for (let i = 0; i < this.players.length; i++) {
+                        let selectedCards = this.players[i].cardsInHand.filter(c => c.selected);
+
+                        if (selectedCards.length) {
+                            lastPlayerWithSelectedCards = i;
+
+                            selectedCards.forEach(sc => {
+                                this.players[i].cardsInHand.splice(
+                                    this.players[i].cardsInHand.findIndex(c => c.name === sc.name)
+                                , 1);
+                            });
+
+                            this.sleep().then(() => {
+                                for (let j = 0; j < selectedCards.length; j++) {
+                                    this.sleep(j + 1).then(() => {
+                                        this.players[i].cardsInHand.push(this.pickNextCard());
+
+                                        if (j >= selectedCards.length - 1) {
+                                            exchangedPlayers.push(i);
+                                        }
+                                        
+                                        if (exchangedPlayers.length >= 4) {
+                                            this.goToNextPhase();
+                                        }
+                                    });
+                                }
+                            });
+                        } else {
+                            exchangedPlayers.push(i);
+
+                            if (exchangedPlayers.length >= 4) {
+                                this.goToNextPhase();
+                            }
+                        }
+                    }
+                },
                 reloadCardsInHand(index) {
-                    let cardsInhand = this.players[index].cardsInHand;
+                    let cardsInHand = this.players[index].cardsInHand;
                     this.players[index].cardsInHand = [];
-                    this.players[index].cardsInHand = cardsInhand;
+                    this.players[index].cardsInHand = cardsInHand;
                 },
                 getRandomArbitrary(min, max) {
                     return Math.floor(Math.random() * (max - min + 1)) + min;
