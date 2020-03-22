@@ -64,7 +64,7 @@
             </div>
 
             <div v-if="players[1].isPlaying">
-                <img v-for="(card, index) in players[1].cardsInHand" v-bind:key="'playeer0cards-' +  index" 
+                <img v-for="(card, index) in players[1].cardsInHand" v-bind:key="'player0cards-' +  index" 
                     src="assets/img/cards/back-hor.jpg" class="player1-card" :width="cardSize.height"
                     :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[1].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
             </div>
@@ -354,6 +354,25 @@
 
                             break;
                         }
+                        case 4: {
+                            for (let i = 0; i < this.players.length; i++) {
+                                if (this.players[i].com) {
+                                    let totalPower = 0;
+                                    this.players[i].cardsInHand.forEach(c => {
+                                        totalPower += c.power;
+                                    });
+
+                                    this.players[i].isPlaying = totalPower > 20;
+                                    this.showToast('O jogador ' + (i + 1) + ' decidiu ' + (this.players[i].isPlaying ? ' jogar' : ' passar'));
+
+                                    if (!this.players[i].isPlaying) {
+                                        this.playSound();
+                                    }
+                                }
+                            }
+                            
+                            break;
+                        }
                     }
                 },
                 pickNextCard() {
@@ -462,6 +481,7 @@
                     this.playSound();
                     this.playOrPassButtonPressed = true;
                     this.players[0].isPlaying = value;
+                    this.showToast('O jogador 1 decidiu ' + (this.players[0].isPlaying ? ' jogar' : ' passar'));
                     this.goToNextPhase();
                 },
                 reloadCardsInHand(index) {
