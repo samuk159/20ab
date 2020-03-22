@@ -13,7 +13,17 @@
 <body>
     <div id="app">
         <div style="height: 100vh;">
-            <span v-if="turn" class="m-3 font-weight-bold text-white">Criado por Samuel Alles Remlinger</span>
+            <div class="row justify-content-between">
+                <div class="col-auto">
+                    <span class="m-3 font-weight-bold text-white">Criado por Samuel Alles Remlinger</span>
+                </div>
+                <div class="col-auto">
+                    <div class="mt-2 mr-3">
+                        <input type="range" class="form-control-range" v-model="gameSpeed" min="0" max="1000"
+                        data-toggle="tooltip" data-placement="bottom" title="Velocidade do Jogo">  
+                    </div>
+                </div>
+            </div>
 
             <div :style="'margin-left: ' + (cardSize.height + 20) + 'px;'">
                 <span v-if="turn" class="font-weight-bold text-white">Turno: {{turn}}<br></span>
@@ -237,7 +247,7 @@
                 },
                 window,
                 trumpSuitIndex: null,
-                sleepInterval: 500,
+                gameSpeed: 500,
                 sound: null,
                 turn: 0,
                 exchangeCardsButtonPressed: false,
@@ -765,6 +775,9 @@
                     return this.currentPhaseIndex === 3 || (
                         this.currentPhaseIndex === 5 && this.currentPlayerIndex === 0 && this.players[0].currentCard === null
                     );
+                },
+                sleepInterval() {
+                    return 1000 - this.gameSpeed;
                 }
             }
         });
