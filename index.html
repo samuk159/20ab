@@ -148,7 +148,8 @@
                     height: 200 * 0.75
                 },
                 window,
-                trumpSuitIndex: null
+                trumpSuitIndex: null,
+                sleepInterval: 1500
             },
             mounted() {
                 this.window = window;
@@ -172,27 +173,29 @@
                 },
                 resetGame() {
                     this.currentTrumpSuitChoicePlayerIndex = this.getRandomArbitrary(0, 3);
-                    this.showToast('O jogador ' + (this.currentTrumpSuitChoicePlayerIndex + 1) + ' foi selecionado para começar o jogo');
                     this.players.forEach(p => {
                         p.points = 20;
                     });
                     this.goToNextTurn(); 
                 },
                 goToNextTurn() {
-                    this.currentTrumpSuitChoicePlayerIndex++;
-                    if (this.currentTrumpSuitChoicePlayerIndex > 3) {
-                        this.currentTrumpSuitChoicePlayerIndex = 0;
-                    }
+                    this.sleep().then(() => {
+                        this.currentTrumpSuitChoicePlayerIndex++;
+                        if (this.currentTrumpSuitChoicePlayerIndex > 3) {
+                            this.currentTrumpSuitChoicePlayerIndex = 0;
+                        }
+                        this.showToast('O jogador ' + (this.currentTrumpSuitChoicePlayerIndex + 1) + ' irá escolher o nipe trunfo');
 
-                    this.currentPhaseIndex = 0;
-                    this.currentTrick = 1;
-                    this.trumpSuitIndex = null;
-                    this.shuffleDeck();
-                    this.players.forEach(p => {
-                        p.cardsInHand = [];
-                        p.lastPlayedCardIndex = null;
+                        this.currentPhaseIndex = 0;
+                        this.currentTrick = 1;
+                        this.trumpSuitIndex = null;
+                        this.shuffleDeck();
+                        this.players.forEach(p => {
+                            p.cardsInHand = [];
+                            p.lastPlayedCardIndex = null;
+                        });
+                        this.handleCurrentPhase();
                     });
-                    this.handleCurrentPhase();
                 },
                 shuffleDeck() {
                     this.cardsInDeck = this.shuffle(JSON.parse(JSON.stringify(this.cards)));
@@ -200,27 +203,52 @@
                 handleCurrentPhase() {
                     switch (this.currentPhaseIndex) {
                         case 0: {
-                            this.players.forEach(p => {
-                                p.cardsInHand.push(this.pickNextCard());
-                                p.cardsInHand.push(this.pickNextCard());
-                            });
-                            this.goToNextPhase();
+                            for (let i = 0; i < this.players.length; i++) {
+                                let p = this.players[i];
+
+                                this.sleep().then(() => {
+                                    p.cardsInHand.push(this.pickNextCard());
+
+                                    this.sleep().then(() => {
+                                        p.cardsInHand.push(this.pickNextCard());
+
+                                        if (i >= this.players.length - 1) {
+                                            this.goToNextPhase();
+                                        }
+                                    });
+                                });
+                            }
                             break;
                         }
                         case 1: {
                             if (this.currentTrumpSuitChoicePlayerIndex !== 0) {
-                                this.selectTrumpSuit(this.getRandomArbitrary(0, 3));
+                                this.sleep().then(() => {
+                                    this.selectTrumpSuit(this.getRandomArbitrary(0, 3));
+                                });
                             }
 
                             break;
                         }
                         case 2: {
-                            this.players.forEach(p => {
-                                p.cardsInHand.push(this.pickNextCard());
-                                p.cardsInHand.push(this.pickNextCard());
-                                p.cardsInHand.push(this.pickNextCard());
-                            });
-                            this.goToNextPhase();
+                            for (let i = 0; i < this.players.length; i++) {
+                                let p = this.players[i];
+
+                                this.sleep().then(() => {
+                                    p.cardsInHand.push(this.pickNextCard());
+
+                                    this.sleep().then(() => {
+                                        p.cardsInHand.push(this.pickNextCard());
+
+                                        this.sleep().then(() => {
+                                            p.cardsInHand.push(this.pickNextCard());
+
+                                            if (i >= this.players.length - 1) {
+                                                this.goToNextPhase();
+                                            }
+                                        });
+                                    });
+                                });
+                            }
                             break;
                         }
                     }
@@ -278,6 +306,15 @@
                     }
 
                     return str;
+                },
+                sleep(times) {
+                    if (times === undefined) {
+                        times = 1;
+                    }
+
+                    return new Promise(resolve => {
+                        setTimeout(resolve, this.sleepInterval * times);
+                    });
                 }
             }
         });
