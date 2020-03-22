@@ -275,7 +275,11 @@
                         }
                         case 1: {
                             if (this.currentTrumpSuitChoicePlayerIndex !== 0) {
-                                this.selectTrumpSuit(this.getRandomArbitrary(0, 3));
+                                let highestSuitInHand = this.getHighestCardInHand(
+                                    this.currentTrumpSuitChoicePlayerIndex
+                                ).suit;
+
+                                this.selectTrumpSuit(Object.values(this.suits).findIndex(s => s === highestSuitInHand));
                             }
 
                             break;
@@ -294,6 +298,7 @@
                                             p.cardsInHand.push(this.pickNextCard());
 
                                             if (i >= this.players.length - 1) {
+                                                this.updateCardPowers();
                                                 this.goToNextPhase();
                                             }
                                         });
@@ -318,7 +323,8 @@
                         this.handleCurrentPhase();
                     });
                 },
-                selectTrumpSuit(index) {this.playSound();
+                selectTrumpSuit(index) {
+                    this.playSound();
                     this.trumpSuitIndex = index;
                     this.showToast(
                         this.upperCaseFirstLetter(
@@ -378,6 +384,28 @@
                             }
                         }
                     }
+                },
+                updateCardPowers() {
+                    let trumpSuit = Object.values(this.suits)[this.trumpSuitIndex];
+
+                    this.players.forEach(p => {
+                        p.cardsInHand.forEach(c => {
+                            if (c.suit === trumpSuit) {
+                                c.power += 8;
+                            }
+                        });
+                    });
+                },
+                getHighestCardInHand(index) {
+                    let highestCard = { power: 0 };
+
+                    this.players[index].cardsInHand.forEach(c => {
+                        if (c.power > highestCard.power) {
+                            highestCard = c;
+                        }
+                    });
+
+                    return highestCard;
                 },
                 reloadCardsInHand(index) {
                     let cardsInHand = this.players[index].cardsInHand;
