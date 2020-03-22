@@ -298,13 +298,35 @@
                                             p.cardsInHand.push(this.pickNextCard());
 
                                             if (i >= this.players.length - 1) {
-                                                this.updateCardPowers();
                                                 this.goToNextPhase();
                                             }
                                         });
                                     });
                                 });
                             }
+                            break;
+                        }
+                        case 3: {
+                            this.updateCardPowers();
+                            
+                            for (let i = 0; i < this.players.length; i++) {
+                                if (this.players[i].com) {
+                                    let selectedCards = [];
+
+                                    for (let j = 0; j < this.players[i].cardsInHand.length; j++) {
+                                        this.players[i].cardsInHand[i].selected = this.players[i].cardsInHand[i].power <= 4;
+
+                                        if (this.players[i].cardsInHand[i].selected) {
+                                            selectedCards.push(i);
+                                        }
+
+                                        if (selectedCards.length >= 3) {
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
                             break;
                         }
                     }
@@ -353,6 +375,7 @@
                         let selectedCards = this.players[i].cardsInHand.filter(c => c.selected);
 
                         if (selectedCards.length) {
+                            this.showToast('O jogador ' + (i + 1) + ' decidiu trocar ' + selectedCards.length + ' cartas');
                             lastPlayerWithSelectedCards = i;
 
                             selectedCards.forEach(sc => {
@@ -377,6 +400,7 @@
                                 }
                             });
                         } else {
+                            this.showToast('O jogador ' + (i + 1) + ' decidiu não trocar nenhuma carta');
                             exchangedPlayers.push(i);
 
                             if (exchangedPlayers.length >= 4) {
