@@ -24,6 +24,22 @@ body {
     transform: rotate(90deg);
 }
 
+.rotate180 {
+    -webkit-transform: rotate(180deg);
+    -moz-transform: rotate(180deg);
+    -o-transform: rotate(180deg);
+    -ms-transform: rotate(180deg);
+    transform: rotate(180deg);
+}
+
+.rotate270 {
+    -webkit-transform: rotate(270deg);
+    -moz-transform: rotate(270deg);
+    -o-transform: rotate(270deg);
+    -ms-transform: rotate(270deg);
+    transform: rotate(270deg);
+}
+
 .player1-card {
     position:absolute;
     right: 10px;
@@ -57,4 +73,8 @@ body {
 .selected-card {
     outline: 3px solid blue;
     outline-offset: -1px;
+}
+
+.position-absolute {
+    position: absolute;
 }

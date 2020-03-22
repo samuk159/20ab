@@ -30,17 +30,26 @@
                 src="assets/img/cards/back-hor.jpg" class="player3-card" :width="cardSize.height"
                 :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[3].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
 
+            <img v-if="currentPlayerIndex === 3" src="assets/img/arrow.png" class="position-absolute rotate90" 
+                :style="'left: ' + (cardSize.height + 30) + 'px; top: ' + ((window.innerHeight / 2) - 29) + 'px;'">
+
             <div id="player2-cards">
                 <div style="position: relative; left: -50%;">
                     <div class="row justify-content-center">
                         <img v-for="(card, index) in players[2].cardsInHand" v-bind:key="'playeer2cards-' +  index" 
                             src="assets/img/cards/back.jpg" class="card-padding-x" :height="cardSize.height">
                     </div>
+                    <div v-if="currentPlayerIndex === 2" class="row justify-content-center" style="margin-top: 20px;">
+                        <img src="assets/img/arrow.png" class="rotate180">
+                    </div>
                 </div>
             </div>
 
             <div id="player0-cards">
                 <div style="position: relative; left: -50%;">
+                    <div v-if="currentPlayerIndex === 0" class="row justify-content-center" style="margin-bottom: 20px;">
+                        <img src="assets/img/arrow.png">
+                    </div>
                     <div class="row justify-content-center">
                         <div v-for="(card, index) in players[0].cardsInHand" v-bind:key="'playeer1cards-' +  index"
                             :class="{'selected-card': card.selected}">
@@ -55,6 +64,9 @@
             <img v-for="(card, index) in players[1].cardsInHand" v-bind:key="'playeer0cards-' +  index" 
                 src="assets/img/cards/back-hor.jpg" class="player1-card" :width="cardSize.height"
                 :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[1].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
+
+            <img v-if="currentPlayerIndex === 1" src="assets/img/arrow.png" class="position-absolute rotate270" 
+                :style="'right: ' + (cardSize.height + 30) + 'px; top: ' + ((window.innerHeight / 2) - 29) + 'px;'">
 
             <div class="center-div">
                 <div style="position: relative; left: -50%; top: -50%;">
