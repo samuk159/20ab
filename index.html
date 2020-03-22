@@ -13,9 +13,11 @@
 <body>
     <div id="app">
         <div style="height: 100vh;">
-            <div class="m-2">
+            <div class="my-2" :style="'margin-left: ' + (cardSize.height + 20) + 'px;'">
                 <span v-for="(player, index) in players" v-bind:key="'playeers-points-' + index" 
                     class="font-weight-bold text-white">Jogador {{index + 1}}: {{player.points}}<br></span>
+                <span class="font-weight-bold text-white mr-2">Nipe trunfo: </span>
+                <img v-if="trumpSuitIndex !== null" :src="'assets/img/suits/' + Object.values(suits)[trumpSuitIndex] + '.png'">
             </div>
 
             <img v-for="(card, index) in players[3].cardsInHand" v-bind:key="'playeer3cards-' + index" 
@@ -184,6 +186,7 @@
 
                     this.currentPhaseIndex = 0;
                     this.currentTrick = 1;
+                    this.trumpSuitIndex = null;
                     this.shuffleDeck();
                     this.players.forEach(p => {
                         p.cardsInHand = [];
@@ -235,7 +238,11 @@
                 },
                 selectTrumpSuit(index) {
                     this.trumpSuitIndex = index;
-                    this.showToast(Object.keys(this.suits)[index] + ' foi selecionado como nipe trunfo');
+                    this.showToast(
+                        this.upperCaseFirstLetter(
+                            Object.keys(this.suits)[index]
+                        ) + ' foi selecionado como nipe trunfo'
+                    );
                     this.goToNextPhase();
                 },
                 getRandomArbitrary(min, max) {
@@ -264,6 +271,13 @@
                         text: text,
                         hideAfter: 5000
                     });
+                },
+                upperCaseFirstLetter(str) {
+                    if (str && str.length > 1) {
+                        return str.substring(0, 1).toUpperCase() + str.substring(1);
+                    }
+
+                    return str;
                 }
             }
         });
