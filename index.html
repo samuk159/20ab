@@ -29,7 +29,7 @@
                 <span v-if="turn" class="font-weight-bold text-white">Turno: {{turn}}<br></span>
                 <span v-for="(player, index) in players" v-bind:key="'players-points-' + index" 
                     class="font-weight-bold text-white">
-                    Jogador {{index + 1}}: {{player.points}}
+                    Jogador {{index + 1}}: {{ player.points}}
                     {{player.currentTurnPoints ? ('-' + player.currentTurnPoints) : ''}}
                 <br></span>
                 <span v-if="turn" class="font-weight-bold text-white">
