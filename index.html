@@ -13,14 +13,16 @@
 <body>
     <div id="app">
         <div style="height: 100vh;">
-            <div class="my-2" :style="'margin-left: ' + (cardSize.height + 20) + 'px;'">
-                <span v-if="turn" class="font-weight-bold text-white mr-2">Turno: {{turn}}<br></span>
+            <span v-if="turn" class="m-3 font-weight-bold text-white">Criado por Samuel Alles Remlinger</span>
+
+            <div :style="'margin-left: ' + (cardSize.height + 20) + 'px;'">
+                <span v-if="turn" class="font-weight-bold text-white">Turno: {{turn}}<br></span>
                 <span v-for="(player, index) in players" v-bind:key="'playeers-points-' + index" 
                     class="font-weight-bold text-white">Jogador {{index + 1}}: {{player.points}}<br></span>
-                <span v-if="turn" class="font-weight-bold text-white mr-2">
+                <span v-if="turn" class="font-weight-bold text-white">
                     Fase: {{phases[currentPhaseIndex].name}}<br>
                 </span>
-                <span class="font-weight-bold text-white mr-2">Nipe trunfo: </span>
+                <span class="font-weight-bold text-white">Nipe trunfo: </span>
                 <img v-if="trumpSuitIndex !== null" :src="'assets/img/suits/' + Object.values(suits)[trumpSuitIndex] + '.png'">
             </div>
 
@@ -40,8 +42,12 @@
             <div id="player0-cards">
                 <div style="position: relative; left: -50%;">
                     <div class="row justify-content-center">
-                        <img v-for="(card, index) in players[0].cardsInHand" v-bind:key="'playeer1cards-' +  index" :height="cardSize.height"
-                            :src="'assets/img/cards/' + card.name + '.png'" class="card-padding-x">
+                        <div v-for="(card, index) in players[0].cardsInHand" v-bind:key="'playeer1cards-' +  index"
+                            :class="{'selected-card': card.selected}">
+                            <img :height="cardSize.height"
+                                :src="'assets/img/cards/' + card.name + '.png'" class="card-padding-x"
+                                @click="cardClicked(index)" :class="{'cursor-pointer': isCardClickable}">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -54,7 +60,7 @@
                 <div style="position: relative; left: -50%; top: -50%;">
                     <div v-if="currentTrumpSuitChoicePlayerIndex === 0 && currentPhaseIndex === 1 && trumpSuitIndex === null">
                         <img v-for="(suit, index) in Object.values(suits)" v-bind:key="'suits-' + index"
-                            :src="'assets/img/suits/' + suit + '.png'" class="suit-button"
+                            :src="'assets/img/suits/' + suit + '.png'" class="suit-button cursor-pointer"
                             @click="selectTrumpSuit(index)">
                         <div class="row justify-content-center pt-3">
                             <span class="font-weight-bold text-white col-auto">Selecione o nipe trunfo</span>
@@ -299,6 +305,22 @@
                     );
                     this.goToNextPhase();
                 },
+                cardClicked(index) {
+                    if (this.isCardClickable) {
+                        if (this.currentPhaseIndex === 3) {
+                            if (this.players[0].cardsInHand[index].selected 
+                                || this.players[0].cardsInHand.filter(c => c.selected).length < 3) {
+                                this.players[0].cardsInHand[index].selected = !this.players[0].cardsInHand[index].selected;
+                                this.reloadCardsInHand(0);
+                            }
+                        }
+                    }
+                },
+                reloadCardsInHand(index) {
+                    let cardsInhand = this.players[index].cardsInHand;
+                    this.players[index].cardsInHand = [];
+                    this.players[index].cardsInHand = cardsInhand;
+                },
                 getRandomArbitrary(min, max) {
                     return Math.floor(Math.random() * (max - min + 1)) + min;
                 },
@@ -357,6 +379,11 @@
                     let oldHeight = this.cardSize.height;
                     this.cardSize.height = (this.window.innerHeight / 4) - (50 / 4);
                     this.cardSize.width = (this.cardSize.height * this.cardSize.width) / oldHeight;
+                }
+            },
+            computed: {
+                isCardClickable() {
+                    return this.currentPhaseIndex === 3 || (this.currentPhaseIndex === 5 && this.currentPlayerIndex === 0);
                 }
             }
         });
