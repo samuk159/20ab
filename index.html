@@ -17,8 +17,11 @@
 
             <div :style="'margin-left: ' + (cardSize.height + 20) + 'px;'">
                 <span v-if="turn" class="font-weight-bold text-white">Turno: {{turn}}<br></span>
-                <span v-for="(player, index) in players" v-bind:key="'playeers-points-' + index" 
-                    class="font-weight-bold text-white">Jogador {{index + 1}}: {{player.points}}<br></span>
+                <span v-for="(player, index) in players" v-bind:key="'players-points-' + index" 
+                    class="font-weight-bold text-white">
+                    Jogador {{index + 1}}: {{player.points}}
+                    {{player.currentTurnPoints ? ('-' + player.currentTurnPoints) : ''}}
+                <br></span>
                 <span v-if="turn" class="font-weight-bold text-white">
                     Fase: {{phases[currentPhaseIndex].name}}<br>
                 </span>
@@ -32,12 +35,16 @@
                     :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[3].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
             </div>
 
-            <img v-if="currentPlayerIndex === 3" src="assets/img/arrow.png" class="position-absolute rotate90" 
+            <img v-if="!players[3].currentCard && currentPlayerIndex === 3" src="assets/img/arrow.png" class="position-absolute rotate90" 
                 :style="'left: ' + (cardSize.height + 30) + 'px; top: ' + ((window.innerHeight / 2) - 29) + 'px;'">
 
             <img v-if="players[3].currentCard" :src="'assets/img/cards/' + players[3].currentCard.name + '.png'" 
-                class="position-absolute" :height="cardSize.height"
+                class="position-absolute" :height="cardSize.height" :class="{'selected-card': players[3].currentCard.winning}"
                 :style="'top: ' + ((window.innerHeight / 2) - (cardSize.height / 2)) + 'px;left: ' + ((window.innerWidth / 2) - (cardSize.width / 2) - cardSize.width - 40) + 'px;'">
+
+            <img v-if="players[2].currentCard" :src="'assets/img/cards/' + players[2].currentCard.name + '.png'" 
+                class="position-absolute" :height="cardSize.height" :class="{'selected-card': players[2].currentCard.winning}"
+                :style="'top: ' + ((window.innerHeight / 2) - (cardSize.height / 2) - (cardSize.height / 2) - 10) + 'px;left: ' + ((window.innerWidth / 2) - (cardSize.width / 2)) + 'px;'">
 
             <div id="player2-cards">
                 <div style="position: relative; left: -50%;">
@@ -45,21 +52,19 @@
                         <img v-for="(card, index) in players[2].cardsInHand" v-bind:key="'player2cards-' +  index" 
                             src="assets/img/cards/back.jpg" class="card-padding-x" :height="cardSize.height">
                     </div>
-                    <div v-if="currentPlayerIndex === 2" class="row justify-content-center" style="margin-top: 20px;">
+                    <div v-if="!players[2].currentCard && currentPlayerIndex === 2" class="row justify-content-center" style="margin-top: 20px;">
                         <img src="assets/img/arrow.png" class="rotate180">
-                    </div>
-                    <div v-if="players[2].currentCard" class="row justify-content-center" style="margin-top: 10px;">
-                        <img :src="'assets/img/cards/' + players[2].currentCard.name + '.png'" :height="cardSize.height">
                     </div>
                 </div>
             </div>
 
+            <img v-if="players[0].currentCard" :src="'assets/img/cards/' + players[0].currentCard.name + '.png'" 
+                class="position-absolute" :height="cardSize.height" :class="{'selected-card': players[0].currentCard.winning}"
+                :style="'bottom: ' + ((window.innerHeight / 2) - (cardSize.height / 2) - (cardSize.height / 2) - 10) + 'px;left: ' + ((window.innerWidth / 2) - (cardSize.width / 2)) + 'px;'">
+
             <div id="player0-cards">
                 <div style="position: relative; left: -50%;">
-                    <div v-if="players[0].currentCard" class="row justify-content-center" style="margin-bottom: 10px;">
-                        <img :src="'assets/img/cards/' + players[0].currentCard.name + '.png'" :height="cardSize.height">
-                    </div>
-                    <div v-if="currentPlayerIndex === 0" class="row justify-content-center" style="margin-bottom: 20px;">
+                    <div v-if="!players[0].currentCard && currentPlayerIndex === 0" class="row justify-content-center" style="margin-bottom: 20px;">
                         <img src="assets/img/arrow.png">
                     </div>
                     <div v-if="players[0].isPlaying" class="row justify-content-center">
@@ -79,11 +84,11 @@
                     :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[1].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
             </div>
 
-            <img v-if="currentPlayerIndex === 1" src="assets/img/arrow.png" class="position-absolute rotate270" 
+            <img v-if="!players[1].currentCard && currentPlayerIndex === 1" src="assets/img/arrow.png" class="position-absolute rotate270" 
                 :style="'right: ' + (cardSize.height + 30) + 'px; top: ' + ((window.innerHeight / 2) - 29) + 'px;'">
 
             <img v-if="players[1].currentCard" :src="'assets/img/cards/' + players[1].currentCard.name + '.png'" 
-                class="position-absolute" :height="cardSize.height"
+                class="position-absolute" :height="cardSize.height" :class="{'selected-card': players[1].currentCard.winning}"
                 :style="'top: ' + ((window.innerHeight / 2) - (cardSize.height / 2)) + 'px;right: ' + ((window.innerWidth / 2) - (cardSize.width / 2) - cardSize.width - 40) + 'px;'">
 
             <div class="center-div">
@@ -241,7 +246,8 @@
                     player: null,
                     card: null
                 },
-                winners: []
+                winners: [],
+                lastWinner: null
             },
             mounted() {
                 this.window = window;
@@ -282,6 +288,8 @@
                     this.showToast('O jogador ' + (this.currentTrumpSuitChoicePlayerIndex + 1) + ' irá escolher o nipe trunfo');
 
                     this.turn++;
+                    this.lastWinner = null;
+                    this.winners = [];
                     this.exchangeCardsButtonPressed = false;
                     this.playOrPassButtonPressed = false;
                     this.currentPhaseIndex = 0;
@@ -295,7 +303,7 @@
                         p.currentTurnPoints = 0;
                     });
 
-                    this.sleep(2).then(() => {
+                    this.sleep().then(() => {
                         this.handleCurrentPhase();
                     });
                 },
@@ -379,6 +387,8 @@
                             break;
                         }
                         case 4: {
+                            this.updateCardPowers();
+
                             for (let i = 0; i < this.players.length; i++) {
                                 if (this.players[i].com) {
                                     let totalPower = 0;
@@ -435,6 +445,8 @@
                                 this.players[0].cardsInHand[index].selected = !this.players[0].cardsInHand[index].selected;
                                 this.reloadCardsInHand(0);
                             }
+                        } else {
+                            this.playCard(index);
                         }
                     }
                 },
@@ -486,7 +498,7 @@
 
                     this.players.forEach(p => {
                         p.cardsInHand.forEach(c => {
-                            if (c.suit === trumpSuit) {
+                            if (c.suit === trumpSuit && c.power <= 8) {
                                 c.power += 8;
                             }
                         });
@@ -503,7 +515,9 @@
                             lowestCardIndex = i;
                         }
 
-                        if (c.power > this.players[index].cardsInHand[highestCardIndex].power) {
+                        if (basePower && c.power > basePower && c.power < this.players[index].cardsInHand[highestCardIndex].power) {
+                            highestCardIndex = 1;
+                        } else if (c.power > this.players[index].cardsInHand[highestCardIndex].power) {
                             highestCardIndex = i;
                         }
                     }
@@ -531,7 +545,10 @@
                     if (this.currentTrick > 5) {
                         this.applyPoints();
                     } else {
-                        this.winners = [];
+                        if (this.lastWinner != null) {
+                            this.currentPlayerIndex = this.lastWinner;
+                        }
+
                         this.currentTrickHighestCard = {
                             player: null, 
                             card: null
@@ -548,32 +565,46 @@
                         if (this.currentPlayerIndex > 3) {
                             this.currentPlayerIndex = 0;
                         }
-                    } while (this.players[this.currentPlayerIndex].isPlaying);
-                    this.comPlayCard();
+                    } while (!this.players[this.currentPlayerIndex].isPlaying);
+
+                    this.sleep(2).then(() => {
+                        this.comPlayCard();
+                    });                    
                 },
                 comPlayCard() {
                     if (this.players[this.currentPlayerIndex].com) {
                         if (this.players[this.currentPlayerIndex].isPlaying) {
                             let basePower = null;
                             if (this.currentTrickHighestCard.card !== null) {
-                                basePower = this.players[this.currentTrickHighestCard.player].cardsInHand[this.currentTrickHighestCard.card].power;
+                                basePower = this.players[this.currentTrickHighestCard.player].currentCard.power;
                             }
 
-                            this.playCard(this.getBestCardInHandIndex(this.currentPlayerIndex, basePower));
+                            if (basePower) {
+                                this.playCard(this.getBestCardInHandIndex(this.currentPlayerIndex, basePower));
+                            } else {
+                                this.playCard(this.getRandomArbitrary(0, this.players[this.currentPlayerIndex].cardsInHand.length - 1));
+                            }
                         } else {
                             this.passToNextPlayingPlayer();
                         }
                     }
                 },
                 playCard(index) {
-                    this.sleep().then(() => {
-                        this.playSound();
-                        this.players[this.currentPlayerIndex].currentCard = this.players[this.currentPlayerIndex].cardsInHand.splice(index, 1);
+                    this.playSound();
+                    this.players[this.currentPlayerIndex].currentCard = this.players[this.currentPlayerIndex].cardsInHand.splice(index, 1)[0];
 
+                    this.sleep(2).then(() => {
                         if (this.currentTrickHighestCard.card === null 
-                            || this.players[this.currentPlayerIndex].currentCard.power > this.players[this.currentTrickHighestCard.player].cardsInHand[this.currentTrickHighestCard.card].power) {
+                            || this.players[this.currentPlayerIndex].currentCard.power > this.players[this.currentTrickHighestCard.player].currentCard.power) {
                             this.currentTrickHighestCard.player = this.currentPlayerIndex;
                             this.currentTrickHighestCard.card = index;
+                            this.players.forEach(p => {
+                                if (p.currentCard) {
+                                    p.currentCard.winning = false;
+                                }
+                            });
+                            this.players[this.currentPlayerIndex].currentCard.winning = true;
+                            this.reloadCurrentPlayerCurrentCard();
                         }
 
                         if (this.players.filter(p => p.currentCard !== null).length >= this.players.filter(p => p.isPlaying).length) {
@@ -584,15 +615,17 @@
                     });
                 },
                 findWinners() {
+                    this.lastWinner = this.currentTrickHighestCard.player;
                     this.winners = [this.currentTrickHighestCard.player];
 
                     for (let i = 0; i < this.players.length; i++) {
                         let p = this.players[i];
 
-                        if (i !== this.currentTrickHighestCard.player 
-                            && this.players[this.currentTrickHighestCard.player].cardsInHand[this.currentTrickHighestCard.card].power === p.currentCard.power) {
-                                this.winners.push(i);
-                            }
+                        if (p.isPlaying && i !== this.currentTrickHighestCard.player 
+                            && this.players[this.currentTrickHighestCard.player].currentCard.power === p.currentCard.power) {
+                            this.players[i].currentCard.winning = true;
+                            this.winners.push(i);
+                        }
                     }
 
                     if (this.winners.length > 1) {
@@ -617,7 +650,7 @@
                     this.winners.forEach(w => {
                         this.players[w].currentTurnPoints++;
                     });
-                    this.sleep(2).then(() => {                        
+                    this.sleep(4).then(() => {                      
                         this.goToNextTrick();
                     });
                 },
@@ -625,23 +658,27 @@
                     let lowestPoint = 0;
 
                     for (let i = 0; i < this.players.length; i++) {
-                        if (this.players[i].currentTurnPoints) {
-                            this.players[i].points -= this.players[i].currentTurnPoints;
-                        } else {
-                            if (i === this.currentTrumpSuitChoicePlayerIndex) {
-                                this.players[i].points += 10;
+                        if (this.players[i].isPlaying) {
+                            if (this.players[i].currentTurnPoints) {
+                                this.showToast('O jogador ' + (i + 1) + ' marcou ' + this.players[i].currentTurnPoints + (this.players[i].currentTurnPoints > 1 ? ' pontos' : ' ponto') + ' neste turno');
+                                this.players[i].points -= this.players[i].currentTurnPoints;
                             } else {
-                                this.players[i].points += 5;
+                                this.showToast('O jogador ' + (i + 1) + '  não marcou nenhum ponto neste turno', 'red');
+                                if (i === this.currentTrumpSuitChoicePlayerIndex) {
+                                    this.players[i].points += 10;
+                                } else {
+                                    this.players[i].points += 5;
+                                }
                             }
-                        }
 
-                        if (this.players[i].points < lowestPoint) {
-                            lowestPoint = this.players[i].points;
+                            if (this.players[i].points < lowestPoint) {
+                                lowestPoint = this.players[i].points;
+                            }
                         }
                     }
 
                     let gameWinners = this.players.filter(p => p.points === lowestPoint);
-                    if (gameWinners === 1) {
+                    if (gameWinners.length === 1) {
                         this.showToast('O jogador ' + gameWinners[0].name + ' venceu o jogo');
                     } else {
                         this.goToNextTurn();
@@ -651,6 +688,11 @@
                     let cardsInHand = this.players[index].cardsInHand;
                     this.players[index].cardsInHand = [];
                     this.players[index].cardsInHand = cardsInHand;
+                },
+                reloadCurrentPlayerCurrentCard() {
+                    let currentCard = this.players[this.currentPlayerIndex].currentCard;
+                    this.players[this.currentPlayerIndex].currentCard = null;
+                    this.players[this.currentPlayerIndex].currentCard = currentCard;
                 },
                 getRandomArbitrary(min, max) {
                     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -673,11 +715,17 @@
 
                     return array;
                 },
-                showToast(text) {
-                    $.toast({
+                showToast(text, bgColor) {
+                    let options = {
                         text: text,
-                        hideAfter: 5000
-                    });
+                        hideAfter: this.sleepInterval * 10
+                    };
+
+                    if (bgColor) {
+                        options.bgColor = bgColor;
+                    }
+
+                    $.toast(options);
                 },
                 upperCaseFirstLetter(str) {
                     if (str && str.length > 1) {
@@ -714,7 +762,9 @@
             },
             computed: {
                 isCardClickable() {
-                    return this.currentPhaseIndex === 3 || (this.currentPhaseIndex === 5 && this.currentPlayerIndex === 0);
+                    return this.currentPhaseIndex === 3 || (
+                        this.currentPhaseIndex === 5 && this.currentPlayerIndex === 0 && this.players[0].currentCard === null
+                    );
                 }
             }
         });
