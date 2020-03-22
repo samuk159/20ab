@@ -45,14 +45,14 @@
                     :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[3].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
             </div>
 
-            <img v-if="!players[3].currentCard && currentPlayerIndex === 3" src="assets/img/arrow.png" class="position-absolute rotate90" 
+            <img v-if="gameStarted && !players[3].currentCard && currentPlayerIndex === 3" src="assets/img/arrow.png" class="position-absolute rotate90" 
                 :style="'left: ' + (cardSize.height + 30) + 'px; top: ' + ((window.innerHeight / 2) - 29) + 'px;'">
 
-            <img v-if="players[3].currentCard" :src="'assets/img/cards/' + players[3].currentCard.name + '.png'" 
+            <img v-if="!winner && players[3].currentCard" :src="'assets/img/cards/' + players[3].currentCard.name + '.png'" 
                 class="position-absolute" :height="cardSize.height" :class="{'selected-card': players[3].currentCard.winning}"
                 :style="'top: ' + ((window.innerHeight / 2) - (cardSize.height / 2)) + 'px;left: ' + ((window.innerWidth / 2) - (cardSize.width / 2) - cardSize.width - 40) + 'px;'">
 
-            <img v-if="players[2].currentCard" :src="'assets/img/cards/' + players[2].currentCard.name + '.png'" 
+            <img v-if="!winner && players[2].currentCard" :src="'assets/img/cards/' + players[2].currentCard.name + '.png'" 
                 class="position-absolute" :height="cardSize.height" :class="{'selected-card': players[2].currentCard.winning}"
                 :style="'top: ' + ((window.innerHeight / 2) - (cardSize.height / 2) - (cardSize.height / 2) - 10) + 'px;left: ' + ((window.innerWidth / 2) - (cardSize.width / 2)) + 'px;'">
 
@@ -62,19 +62,19 @@
                         <img v-for="(card, index) in players[2].cardsInHand" v-bind:key="'player2cards-' +  index" 
                             src="assets/img/cards/back.jpg" class="card-padding-x" :height="cardSize.height">
                     </div>
-                    <div v-if="!players[2].currentCard && currentPlayerIndex === 2" class="row justify-content-center" style="margin-top: 20px;">
+                    <div v-if="gameStarted && !players[2].currentCard && currentPlayerIndex === 2" class="row justify-content-center" style="margin-top: 20px;">
                         <img src="assets/img/arrow.png" class="rotate180">
                     </div>
                 </div>
             </div>
 
-            <img v-if="players[0].currentCard" :src="'assets/img/cards/' + players[0].currentCard.name + '.png'" 
+            <img v-if="!winner && players[0].currentCard" :src="'assets/img/cards/' + players[0].currentCard.name + '.png'" 
                 class="position-absolute" :height="cardSize.height" :class="{'selected-card': players[0].currentCard.winning}"
                 :style="'bottom: ' + ((window.innerHeight / 2) - (cardSize.height / 2) - (cardSize.height / 2) - 10) + 'px;left: ' + ((window.innerWidth / 2) - (cardSize.width / 2)) + 'px;'">
 
             <div id="player0-cards">
                 <div style="position: relative; left: -50%;">
-                    <div v-if="!players[0].currentCard && currentPlayerIndex === 0" class="row justify-content-center" style="margin-bottom: 20px;">
+                    <div v-if="gameStarted && !players[0].currentCard && currentPlayerIndex === 0" class="row justify-content-center" style="margin-bottom: 20px;">
                         <img src="assets/img/arrow.png">
                     </div>
                     <div v-if="players[0].isPlaying" class="row justify-content-center">
@@ -94,10 +94,10 @@
                     :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[1].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
             </div>
 
-            <img v-if="!players[1].currentCard && currentPlayerIndex === 1" src="assets/img/arrow.png" class="position-absolute rotate270" 
+            <img v-if="gameStarted && !players[1].currentCard && currentPlayerIndex === 1" src="assets/img/arrow.png" class="position-absolute rotate270" 
                 :style="'right: ' + (cardSize.height + 30) + 'px; top: ' + ((window.innerHeight / 2) - 29) + 'px;'">
 
-            <img v-if="players[1].currentCard" :src="'assets/img/cards/' + players[1].currentCard.name + '.png'" 
+            <img v-if="!winner && players[1].currentCard" :src="'assets/img/cards/' + players[1].currentCard.name + '.png'" 
                 class="position-absolute" :height="cardSize.height" :class="{'selected-card': players[1].currentCard.winning}"
                 :style="'top: ' + ((window.innerHeight / 2) - (cardSize.height / 2)) + 'px;right: ' + ((window.innerWidth / 2) - (cardSize.width / 2) - cardSize.width - 40) + 'px;'">
 
@@ -142,6 +142,19 @@
                                 class="btn btn-danger col-auto mx-3">Passar</button>
                             <button @click="playOrPass(true)" type="button" 
                                 class="btn btn-primary col-auto mx-3">Jogar</button>
+                        </div>
+                    </div>
+
+                    <div v-if="winner">
+                        <span class="font-weight-bold text-white col-auto">
+                            O jogador {{winner.name}} venceu a partida
+                        </span>
+                    </div>
+
+                    <div v-if="!gameStarted">
+                        <div class="row justify-content-center pt-3">
+                            <button @click="startGame()" type="button" 
+                                class="btn btn-secondary col-auto">Iniciar partida</button>
                         </div>
                     </div>
                 </div>
@@ -257,14 +270,15 @@
                     card: null
                 },
                 winners: [],
-                lastWinner: null
+                lastWinner: null,
+                winner: null,
+                gameStarted: false
             },
             mounted() {
                 this.window = window;
                 this.setCardSize();
                 this.setSound();
                 this.generateCards();
-                this.resetGame();
             },
             methods: {
                 generateCards() {
@@ -281,7 +295,9 @@
                         }
                     });
                 },
-                resetGame() {
+                startGame() {
+                    this.winner = null;
+                    this.gameStarted = true;
                     this.currentTrumpSuitChoicePlayerIndex = this.getRandomArbitrary(0, 3);
                     this.players.forEach(p => {
                         p.points = 20;
@@ -555,10 +571,6 @@
                     if (this.currentTrick > 5) {
                         this.applyPoints();
                     } else {
-                        if (this.lastWinner != null) {
-                            this.currentPlayerIndex = this.lastWinner;
-                        }
-
                         this.currentTrickHighestCard = {
                             player: null, 
                             card: null
@@ -566,7 +578,16 @@
                         this.players.forEach(p => {
                             p.currentCard = null;
                         });
-                        this.comPlayCard();
+
+                        if (this.lastWinner != null) {
+                            this.currentPlayerIndex = this.lastWinner;
+                        }
+                        
+                        if (!this.players[this.currentPlayerIndex].isPlaying) {
+                            this.passToNextPlayingPlayer();
+                        } else {
+                            this.comPlayCard();
+                        }
                     }
                 },
                 passToNextPlayingPlayer() {
@@ -671,7 +692,7 @@
                         if (this.players[i].isPlaying) {
                             if (this.players[i].currentTurnPoints) {
                                 this.showToast('O jogador ' + (i + 1) + ' marcou ' + this.players[i].currentTurnPoints + (this.players[i].currentTurnPoints > 1 ? ' pontos' : ' ponto') + ' neste turno');
-                                this.players[i].points -= this.players[i].currentTurnPoints;
+                                this.players[i].points -= (this.players[i].currentTurnPoints);
                             } else {
                                 this.showToast('O jogador ' + (i + 1) + '  não marcou nenhum ponto neste turno', 'red');
                                 if (i === this.currentTrumpSuitChoicePlayerIndex) {
@@ -689,7 +710,9 @@
 
                     let gameWinners = this.players.filter(p => p.points === lowestPoint);
                     if (gameWinners.length === 1) {
-                        this.showToast('O jogador ' + gameWinners[0].name + ' venceu o jogo');
+                        this.showToast('O jogador ' + gameWinners[0].name + ' venceu a partida');
+                        this.winner = gameWinners[0];
+                        this.gameStarted = false;
                     } else {
                         this.goToNextTurn();
                     }
