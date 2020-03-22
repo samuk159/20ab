@@ -142,42 +142,46 @@
                 players: [
                     {
                         id: 0,
-                        name: 'player1',
+                        name: 'Jogador 1',
                         com: false,
                         points: 20,
                         cardsInHand: [],
-                        lastPlayedCardIndex: null,
-                        isPlaying: true
+                        currentCard: null,
+                        isPlaying: true,
+                        currentTurnPoints: 0
                     },
                     {
                         id: 1,
-                        name: 'player12',
+                        name: 'Jogador 2',
                         com: true,
                         points: 20,
                         cardsInHand: [],
-                        lastPlayedCardIndex: null,
-                        isPlaying: true
+                        currentCard: null,
+                        isPlaying: true,
+                        currentTurnPoints: 0
                     },
                     {
                         id: 2,
-                        name: 'player3',
+                        name: 'Jogador 3',
                         com: true,
                         points: 20,
                         cardsInHand: [],
-                        lastPlayedCardIndex: null,
-                        isPlaying: true
+                        currentCard: null,
+                        isPlaying: true,
+                        currentTurnPoints: 0
                     },
                     {
                         id: 3,
-                        name: 'player4',
+                        name: 'Jogador 4',
                         com: true,
                         points: 20,
                         cardsInHand: [],
-                        lastPlayedCardIndex: null,
-                        isPlaying: true
+                        currentCard: null,
+                        isPlaying: true,
+                        currentTurnPoints: 0
                     },
                 ],
-                currentTrick: 1,
+                currentTrick: 0,
                 currentTrumpSuitChoicePlayerIndex: 0,
                 currentPlayerIndex: 0,
                 phases: [
@@ -218,7 +222,12 @@
                 sound: null,
                 turn: 0,
                 exchangeCardsButtonPressed: false,
-                playOrPassButtonPressed: false
+                playOrPassButtonPressed: false,
+                currentTrickHighestCard: {
+                    player: null,
+                    card: null
+                },
+                winners: []
             },
             mounted() {
                 this.window = window;
@@ -262,13 +271,14 @@
                     this.exchangeCardsButtonPressed = false;
                     this.playOrPassButtonPressed = false;
                     this.currentPhaseIndex = 0;
-                    this.currentTrick = 1;
+                    this.currentTrick = 0;
                     this.trumpSuitIndex = null;
                     this.shuffleDeck();
                     this.players.forEach(p => {
                         p.cardsInHand = [];
-                        p.lastPlayedCardIndex = null;
+                        p.currentCard = null;
                         p.isPlaying = true;
+                        p.currentTurnPoints = 0;
                     });
 
                     this.sleep(2).then(() => {
@@ -301,7 +311,7 @@
                         case 1: {
                             if (this.currentTrumpSuitChoicePlayerIndex !== 0) {
                                 let highestSuitInHand = this.players[this.currentTrumpSuitChoicePlayerIndex].cardsInHand[
-                                    this.getHighestCardInHandIndex(this.currentTrumpSuitChoicePlayerIndex)
+                                    this.getBestCardInHandIndex(this.currentTrumpSuitChoicePlayerIndex)
                                 ].suit;
 
                                 this.selectTrumpSuit(Object.values(this.suits).findIndex(s => s === highestSuitInHand));
@@ -371,6 +381,10 @@
                                 }
                             }
                             
+                            break;
+                        }
+                        case 5: {
+                            this.goToNextTrick();
                             break;
                         }
                     }
@@ -464,14 +478,27 @@
                         });
                     });
                 },
-                getHighestCardInHandIndex(index) {
+                getBestCardInHandIndex(index, basePower) {
                     let highestCardIndex = 0;
+                    let lowestCardIndex = 0;
 
                     for (let i = 1; i < this.players[index].cardsInHand.length; i++) {
                         let c = this.players[index].cardsInHand[i];
                         
+                        if (c.power < this.players[index].cardsInHand[highestCardIndex].power) {
+                            lowestCardIndex = i;
+                        }
+
                         if (c.power > this.players[index].cardsInHand[highestCardIndex].power) {
                             highestCardIndex = i;
+                        }
+                    }
+
+                    if (basePower) {
+                        if (this.players[index].cardsInHand[highestCardIndex].power > basePower) {
+                            return highestCardIndex;
+                        } else {
+                            return lowestCardIndex;
                         }
                     }
 
@@ -483,6 +510,128 @@
                     this.players[0].isPlaying = value;
                     this.showToast('O jogador 1 decidiu ' + (this.players[0].isPlaying ? ' jogar' : ' passar'));
                     this.goToNextPhase();
+                },
+                goToNextTrick() {
+                    this.currentTrick++;
+
+                    if (this.currentTrick > 5) {
+                        this.applyPoints();
+                    } else {
+                        this.winners = [];
+                        this.currentTrickHighestCard = {
+                            player: null, 
+                            card: null
+                        };
+                        this.players.forEach(p => {
+                            p.currentCard = null;
+                        });
+                        this.comPlayCard();
+                    }
+                },
+                passToNextPlayingPlayer() {
+                    do {
+                        this.currentPlayerIndex++;
+                        if (this.currentPlayerIndex > 3) {
+                            this.currentPlayerIndex = 0;
+                        }
+                    } while (this.players[this.currentPlayerIndex].isPlaying);
+                    this.comPlayCard();
+                },
+                comPlayCard() {
+                    if (this.players[this.currentPlayerIndex].com) {
+                        if (this.players[this.currentPlayerIndex].isPlaying) {
+                            let basePower = null;
+                            if (this.currentTrickHighestCard.card !== null) {
+                                basePower = this.players[this.currentTrickHighestCard.player].cardsInHand[this.currentTrickHighestCard.card].power;
+                            }
+
+                            this.playCard(this.getBestCardInHandIndex(this.currentPlayerIndex, basePower));
+                        } else {
+                            this.passToNextPlayingPlayer();
+                        }
+                    }
+                },
+                playCard(index) {
+                    this.sleep().then(() => {
+                        this.playSound();
+                        this.players[this.currentPlayerIndex].currentCard = this.players[this.currentPlayerIndex].cardsInHand.splice(index, 1);
+
+                        if (this.currentTrickHighestCard.card === null 
+                            || this.players[this.currentPlayerIndex].currentCard.power > this.players[this.currentTrickHighestCard.player].cardsInHand[this.currentTrickHighestCard.card].power) {
+                            this.currentTrickHighestCard.player = this.currentPlayerIndex;
+                            this.currentTrickHighestCard.card = index;
+                        }
+
+                        if (this.players.filter(p => p.currentCard !== null).length >= this.players.filter(p => p.isPlaying).length) {
+                            this.findWinners();
+                        } else {
+                            this.passToNextPlayingPlayer();
+                        }
+                    });
+                },
+                findWinners() {
+                    this.winners = [this.currentTrickHighestCard.player];
+
+                    for (let i = 0; i < this.players.length; i++) {
+                        let p = this.players[i];
+
+                        if (i !== this.currentTrickHighestCard.player 
+                            && this.players[this.currentTrickHighestCard.player].cardsInHand[this.currentTrickHighestCard.card].power === p.currentCard.power) {
+                                this.winners.push(i);
+                            }
+                    }
+
+                    if (this.winners.length > 1) {
+                        let winnersString = '';
+                        for (let i = 0; i < this.winners.length; i++) {
+                            let w = this.winners[i];
+
+                            if (i > 0 && i >= this.winners.length - 1) {
+                                winnersString += ' e ';
+                            } else if (winnersString.length) {
+                                winnersString += ', ';
+                            }
+
+                            winnersString += '' + (w + 1);
+                        }
+
+                        this.showToast('Os jogadores ' + winnersString + ' venceram a rodada');
+                    } else {
+                        this.showToast('O jogador ' + (this.currentTrickHighestCard.player + 1) + ' venceu a rodada');
+                    }
+
+                    this.winners.forEach(w => {
+                        this.players[w].currentTurnPoints++;
+                    });
+                    this.sleep(2).then(() => {                        
+                        this.goToNextTrick();
+                    });
+                },
+                applyPoints() {
+                    let lowestPoint = 0;
+
+                    for (let i = 0; i < this.players.length; i++) {
+                        if (this.players[i].currentTurnPoints) {
+                            this.players[i].points -= this.players[i].currentTurnPoints;
+                        } else {
+                            if (i === this.currentTrumpSuitChoicePlayerIndex) {
+                                this.players[i].points += 10;
+                            } else {
+                                this.players[i].points += 5;
+                            }
+                        }
+
+                        if (this.players[i].points < lowestPoint) {
+                            lowestPoint = this.players[i].points;
+                        }
+                    }
+
+                    let gameWinners = this.players.filter(p => p.points === lowestPoint);
+                    if (gameWinners === 1) {
+                        this.showToast('O jogador ' + gameWinners[0].name + ' venceu o jogo');
+                    } else {
+                        this.goToNextTurn();
+                    }
                 },
                 reloadCardsInHand(index) {
                     let cardsInHand = this.players[index].cardsInHand;
