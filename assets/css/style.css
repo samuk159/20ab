@@ -1,0 +1,80 @@
+body {
+    background-image: url("../img/background.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+#player0-cards {
+    position:absolute;
+    bottom: 10px;
+    left: 50%;
+}
+
+#player2-cards {
+    position:absolute;
+    top: 10px;
+    left: 50%;
+}
+
+.rotate90 {
+    -webkit-transform: rotate(90deg);
+    -moz-transform: rotate(90deg);
+    -o-transform: rotate(90deg);
+    -ms-transform: rotate(90deg);
+    transform: rotate(90deg);
+}
+
+.rotate180 {
+    -webkit-transform: rotate(180deg);
+    -moz-transform: rotate(180deg);
+    -o-transform: rotate(180deg);
+    -ms-transform: rotate(180deg);
+    transform: rotate(180deg);
+}
+
+.rotate270 {
+    -webkit-transform: rotate(270deg);
+    -moz-transform: rotate(270deg);
+    -o-transform: rotate(270deg);
+    -ms-transform: rotate(270deg);
+    transform: rotate(270deg);
+}
+
+.player1-card {
+    position:absolute;
+    right: 10px;
+}
+
+.player3-card {
+    position:absolute;
+    left: 10px;
+}
+
+.card-padding-x {
+    padding-left: 2px;
+    padding-right: 2px;
+}
+
+.center-div {
+    position:absolute;
+    left: 50%;
+    top: 50%;
+}
+
+.suit-button {
+    margin-left: 20px;
+    margin-right: 20px;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.selected-card {
+    outline: 3px solid blue;
+    outline-offset: -1px;
+}
+
+.position-absolute {
+    position: absolute;
+}

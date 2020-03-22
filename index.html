@@ -7,16 +7,166 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/css/jquery.toast.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
     <div id="app">
+        <div style="height: 100vh;">
+            <div class="row justify-content-between">
+                <div class="col-auto">
+                    <span class="m-3 font-weight-bold text-white">Criado por Samuel Alles Remlinger</span>
+                </div>
+                <div class="col-auto">
+                    <div class="mt-2 mr-3">
+                        <input type="range" class="form-control-range" v-model="gameSpeed" min="0" max="1000"
+                        data-toggle="tooltip" data-placement="bottom" title="Velocidade do Jogo">  
+                    </div>
+                </div>
+            </div>
+
+            <div :style="'margin-left: ' + (cardSize.height + 20) + 'px;'">
+                <span v-if="turn" class="font-weight-bold text-white">Turno: {{turn}}<br></span>
+                <span v-for="(player, index) in players" v-bind:key="'players-points-' + index" 
+                    class="font-weight-bold text-white">
+                    Jogador {{index + 1}}: {{player.points}}
+                    {{player.currentTurnPoints ? ('-' + player.currentTurnPoints) : ''}}
+                <br></span>
+                <span v-if="turn" class="font-weight-bold text-white">
+                    Fase: {{phases[currentPhaseIndex].name}}<br>
+                </span>
+                <span class="font-weight-bold text-white">Nipe trunfo: </span>
+                <img v-if="trumpSuitIndex !== null" :src="'assets/img/suits/' + Object.values(suits)[trumpSuitIndex] + '.png'">
+            </div>
+
+            <div v-if="players[3].isPlaying">
+                <img v-for="(card, index) in players[3].cardsInHand" v-bind:key="'playeer3cards-' + index" 
+                    src="assets/img/cards/back-hor.jpg" class="player3-card" :width="cardSize.height"
+                    :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[3].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
+            </div>
+
+            <img v-if="gameStarted && !players[3].currentCard && currentPlayerIndex === 3" src="assets/img/arrow.png" class="position-absolute rotate90" 
+                :style="'left: ' + (cardSize.height + 30) + 'px; top: ' + ((window.innerHeight / 2) - 29) + 'px;'">
+
+            <img v-if="!winner && players[3].currentCard" :src="'assets/img/cards/' + players[3].currentCard.name + '.png'" 
+                class="position-absolute" :height="cardSize.height" :class="{'selected-card': players[3].currentCard.winning}"
+                :style="'top: ' + ((window.innerHeight / 2) - (cardSize.height / 2)) + 'px;left: ' + ((window.innerWidth / 2) - (cardSize.width / 2) - cardSize.width - 40) + 'px;'">
+
+            <img v-if="!winner && players[2].currentCard" :src="'assets/img/cards/' + players[2].currentCard.name + '.png'" 
+                class="position-absolute" :height="cardSize.height" :class="{'selected-card': players[2].currentCard.winning}"
+                :style="'top: ' + ((window.innerHeight / 2) - (cardSize.height / 2) - (cardSize.height / 2) - 10) + 'px;left: ' + ((window.innerWidth / 2) - (cardSize.width / 2)) + 'px;'">
+
+            <div id="player2-cards">
+                <div style="position: relative; left: -50%;">
+                    <div v-if="players[2].isPlaying" class="row justify-content-center">
+                        <img v-for="(card, index) in players[2].cardsInHand" v-bind:key="'player2cards-' +  index" 
+                            src="assets/img/cards/back.jpg" class="card-padding-x" :height="cardSize.height">
+                    </div>
+                    <div v-if="gameStarted && !players[2].currentCard && currentPlayerIndex === 2" class="row justify-content-center" style="margin-top: 20px;">
+                        <img src="assets/img/arrow.png" class="rotate180">
+                    </div>
+                </div>
+            </div>
+
+            <img v-if="!winner && players[0].currentCard" :src="'assets/img/cards/' + players[0].currentCard.name + '.png'" 
+                class="position-absolute" :height="cardSize.height" :class="{'selected-card': players[0].currentCard.winning}"
+                :style="'bottom: ' + ((window.innerHeight / 2) - (cardSize.height / 2) - (cardSize.height / 2) - 10) + 'px;left: ' + ((window.innerWidth / 2) - (cardSize.width / 2)) + 'px;'">
+
+            <div id="player0-cards">
+                <div style="position: relative; left: -50%;">
+                    <div v-if="gameStarted && !players[0].currentCard && currentPlayerIndex === 0" class="row justify-content-center" style="margin-bottom: 20px;">
+                        <img src="assets/img/arrow.png">
+                    </div>
+                    <div v-if="players[0].isPlaying" class="row justify-content-center">
+                        <div v-for="(card, index) in players[0].cardsInHand" v-bind:key="'player1cards-' +  index"
+                            :class="{'selected-card': card.selected}">
+                            <img :height="cardSize.height"
+                                :src="'assets/img/cards/' + card.name + '.png'" class="card-padding-x"
+                                @click="cardClicked(index)" :class="{'cursor-pointer': isCardClickable}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="players[1].isPlaying">
+                <img v-for="(card, index) in players[1].cardsInHand" v-bind:key="'player0cards-' +  index" 
+                    src="assets/img/cards/back-hor.jpg" class="player1-card" :width="cardSize.height"
+                    :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[1].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
+            </div>
+
+            <img v-if="gameStarted && !players[1].currentCard && currentPlayerIndex === 1" src="assets/img/arrow.png" class="position-absolute rotate270" 
+                :style="'right: ' + (cardSize.height + 30) + 'px; top: ' + ((window.innerHeight / 2) - 29) + 'px;'">
+
+            <img v-if="!winner && players[1].currentCard" :src="'assets/img/cards/' + players[1].currentCard.name + '.png'" 
+                class="position-absolute" :height="cardSize.height" :class="{'selected-card': players[1].currentCard.winning}"
+                :style="'top: ' + ((window.innerHeight / 2) - (cardSize.height / 2)) + 'px;right: ' + ((window.innerWidth / 2) - (cardSize.width / 2) - cardSize.width - 40) + 'px;'">
+
+            <div class="center-div">
+                <div style="position: relative; left: -50%; top: -50%;">
+                    <div v-if="currentTrumpSuitChoicePlayerIndex === 0 && currentPhaseIndex === 1 && trumpSuitIndex === null">
+                        <img v-for="(suit, index) in Object.values(suits)" v-bind:key="'suits-' + index"
+                            :src="'assets/img/suits/' + suit + '.png'" class="suit-button cursor-pointer"
+                            @click="selectTrumpSuit(index)">
+                        <div class="row justify-content-center pt-3">
+                            <span class="font-weight-bold text-white col-auto">Selecione o nipe trunfo</span>
+                        </div>
+                    </div>
+
+                    <div v-if="currentPhaseIndex <= 2 && trumpSuitIndex !== null">
+                        <div class="row justify-content-center pt-3">
+                            <img :src="'assets/img/suits/' + Object.values(suits)[trumpSuitIndex] + '.png'">
+                        </div>
+                        <span class="font-weight-bold text-white col-auto">Nipe trunfo</span>
+                    </div>
+
+                    <div v-if="!exchangeCardsButtonPressed && currentPhaseIndex === 3">
+                        <div class="row justify-content-center">
+                            <span class="font-weight-bold text-white col-auto">
+                                Selecione até 3 cartas para trocar
+                            </span>
+                        </div>
+                        <div class="row justify-content-center pt-3">
+                            <button @click="exchangePlayerCards()" type="button" 
+                                class="btn btn-secondary col-auto">Continuar</button>
+                        </div>
+                    </div>
+
+                    <div v-if="!playOrPassButtonPressed && currentPhaseIndex === 4">
+                        <div class="row justify-content-center">
+                            <span class="font-weight-bold text-white col-auto">
+                                Deseja jogar ou passar a rodada?
+                            </span>
+                        </div>
+                        <div class="row justify-content-center pt-3">
+                            <button @click="playOrPass(false)" type="button" 
+                                class="btn btn-danger col-auto mx-3">Passar</button>
+                            <button @click="playOrPass(true)" type="button" 
+                                class="btn btn-primary col-auto mx-3">Jogar</button>
+                        </div>
+                    </div>
+
+                    <div v-if="winner">
+                        <span class="font-weight-bold text-white col-auto">
+                            O jogador {{winner.name}} venceu a partida
+                        </span>
+                    </div>
+
+                    <div v-if="!gameStarted">
+                        <div class="row justify-content-center pt-3">
+                            <button @click="startGame()" type="button" 
+                                class="btn btn-secondary col-auto">Iniciar partida</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="./assets/js/jquery.toast.min.js"></script>
     <script>
         var app = new Vue({
             el: '#app',
@@ -34,72 +184,101 @@
                 players: [
                     {
                         id: 0,
-                        name: 'player1',
+                        name: 'Jogador 1',
                         com: false,
                         points: 20,
                         cardsInHand: [],
-                        lastPlayedCardIndex: null
+                        currentCard: null,
+                        isPlaying: true,
+                        currentTurnPoints: 0
                     },
                     {
                         id: 1,
-                        name: 'player12',
+                        name: 'Jogador 2',
                         com: true,
                         points: 20,
                         cardsInHand: [],
-                        lastPlayedCardIndex: null
+                        currentCard: null,
+                        isPlaying: true,
+                        currentTurnPoints: 0
                     },
                     {
                         id: 2,
-                        name: 'player3',
+                        name: 'Jogador 3',
                         com: true,
                         points: 20,
                         cardsInHand: [],
-                        lastPlayedCardIndex: null
+                        currentCard: null,
+                        isPlaying: true,
+                        currentTurnPoints: 0
                     },
                     {
                         id: 3,
-                        name: 'player4',
+                        name: 'Jogador 4',
                         com: true,
                         points: 20,
                         cardsInHand: [],
-                        lastPlayedCardIndex: null
+                        currentCard: null,
+                        isPlaying: true,
+                        currentTurnPoints: 0
                     },
                 ],
-                currentTrick: 1,
+                currentTrick: 0,
                 currentTrumpSuitChoicePlayerIndex: 0,
                 currentPlayerIndex: 0,
                 phases: [
                     {
                         id: 0,
-                        name: 'First draw',
+                        name: 'Primeira compra',
                     },
                     {
                         id: 1,
-                        name: 'Trump suit choice',
+                        name: 'Escolha do nipe trunfo',
                     },
                     {
                         id: 2,
-                        name: 'Second draw',
+                        name: 'Segunda compra',
                     },
                     {
                         id: 3,
-                        name: 'Exchange',
+                        name: 'Troca',
                     },
                     {
                         id: 4,
-                        name: 'Play or pass choice',
+                        name: 'Jogar ou passar',
                     },
                     {
                         id: 5,
-                        name: 'Game',
+                        name: 'Principal',
                     }
                 ],
                 currentPhaseIndex: 0,
                 cardsInDeck: [],
+                cardSize: {
+                    width: 129 * 0.75,
+                    height: 200 * 0.75
+                },
+                window,
+                trumpSuitIndex: null,
+                gameSpeed: 500,
+                sound: null,
+                turn: 0,
+                exchangeCardsButtonPressed: false,
+                playOrPassButtonPressed: false,
+                currentTrickHighestCard: {
+                    player: null,
+                    card: null
+                },
+                winners: [],
+                lastWinner: null,
+                winner: null,
+                gameStarted: false
             },
-            mounted() { debugger;
+            mounted() {
+                this.window = window;
+                this.setCardSize();
+                this.setSound();
                 this.generateCards();
-                this.resetGame();
             },
             methods: {
                 generateCards() {
@@ -116,7 +295,9 @@
                         }
                     });
                 },
-                resetGame() {
+                startGame() {
+                    this.winner = null;
+                    this.gameStarted = true;
                     this.currentTrumpSuitChoicePlayerIndex = this.getRandomArbitrary(0, 3);
                     this.players.forEach(p => {
                         p.points = 20;
@@ -124,19 +305,33 @@
                     this.goToNextTurn(); 
                 },
                 goToNextTurn() {
+                    this.playSound();
                     this.currentTrumpSuitChoicePlayerIndex++;
                     if (this.currentTrumpSuitChoicePlayerIndex > 3) {
                         this.currentTrumpSuitChoicePlayerIndex = 0;
                     }
+                    this.currentPlayerIndex = this.currentTrumpSuitChoicePlayerIndex;
+                    this.showToast('O jogador ' + (this.currentTrumpSuitChoicePlayerIndex + 1) + ' irá escolher o nipe trunfo');
 
+                    this.turn++;
+                    this.lastWinner = null;
+                    this.winners = [];
+                    this.exchangeCardsButtonPressed = false;
+                    this.playOrPassButtonPressed = false;
                     this.currentPhaseIndex = 0;
-                    this.currentTrick = 1;
+                    this.currentTrick = 0;
+                    this.trumpSuitIndex = null;
                     this.shuffleDeck();
                     this.players.forEach(p => {
                         p.cardsInHand = [];
-                        p.lastPlayedCardIndex = null;
+                        p.currentCard = null;
+                        p.isPlaying = true;
+                        p.currentTurnPoints = 0;
                     });
-                    this.handleCurrentPhase();
+
+                    this.sleep().then(() => {
+                        this.handleCurrentPhase();
+                    });
                 },
                 shuffleDeck() {
                     this.cardsInDeck = this.shuffle(JSON.parse(JSON.stringify(this.cards)));
@@ -144,27 +339,396 @@
                 handleCurrentPhase() {
                     switch (this.currentPhaseIndex) {
                         case 0: {
-                            this.players.forEach(p => {
-                                p.cardsInHand.push(this.pickNextCard());
-                                p.cardsInHand.push(this.pickNextCard());
-                            });
+                            for (let i = 0; i < this.players.length; i++) {
+                                let p = this.players[i];
+
+                                this.sleep().then(() => {
+                                    p.cardsInHand.push(this.pickNextCard());
+
+                                    this.sleep().then(() => {
+                                        p.cardsInHand.push(this.pickNextCard());
+
+                                        if (i >= this.players.length - 1) {
+                                            this.goToNextPhase();
+                                        }
+                                    });
+                                });
+                            }
+                            break;
+                        }
+                        case 1: {
+                            if (this.currentTrumpSuitChoicePlayerIndex !== 0) {
+                                let highestSuitInHand = this.players[this.currentTrumpSuitChoicePlayerIndex].cardsInHand[
+                                    this.getBestCardInHandIndex(this.currentTrumpSuitChoicePlayerIndex)
+                                ].suit;
+
+                                this.selectTrumpSuit(Object.values(this.suits).findIndex(s => s === highestSuitInHand));
+                            }
+
+                            break;
+                        }
+                        case 2: {
+                            for (let i = 0; i < this.players.length; i++) {
+                                let p = this.players[i];
+
+                                this.sleep().then(() => {
+                                    p.cardsInHand.push(this.pickNextCard());
+
+                                    this.sleep().then(() => {
+                                        p.cardsInHand.push(this.pickNextCard());
+
+                                        this.sleep().then(() => {
+                                            p.cardsInHand.push(this.pickNextCard());
+
+                                            if (i >= this.players.length - 1) {
+                                                this.goToNextPhase();
+                                            }
+                                        });
+                                    });
+                                });
+                            }
+                            break;
+                        }
+                        case 3: {
+                            this.updateCardPowers();
+                            
+                            for (let i = 0; i < this.players.length; i++) {
+                                if (this.players[i].com) {
+                                    let selectedCards = [];
+
+                                    for (let j = 0; j < this.players[i].cardsInHand.length; j++) {
+                                        this.players[i].cardsInHand[i].selected = this.players[i].cardsInHand[i].power <= 4;
+
+                                        if (this.players[i].cardsInHand[i].selected) {
+                                            selectedCards.push(i);
+                                        }
+
+                                        if (selectedCards.length >= 3) {
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
+                            break;
+                        }
+                        case 4: {
+                            this.updateCardPowers();
+
+                            for (let i = 0; i < this.players.length; i++) {
+                                if (this.players[i].com) {
+                                    let totalPower = 0;
+                                    this.players[i].cardsInHand.forEach(c => {
+                                        totalPower += c.power;
+                                    });
+
+                                    this.players[i].isPlaying = totalPower > 20;
+                                    this.showToast('O jogador ' + (i + 1) + ' decidiu ' + (this.players[i].isPlaying ? ' jogar' : ' passar'));
+
+                                    if (!this.players[i].isPlaying) {
+                                        this.playSound();
+                                    }
+                                }
+                            }
+                            
+                            break;
+                        }
+                        case 5: {
+                            this.goToNextTrick();
                             break;
                         }
                     }
                 },
                 pickNextCard() {
+                    this.playSound();
                     return this.cardsInDeck.pop();
                 },
                 goToNextPhase() {
-                    this.currentPhaseIndex++;
-                    if (this.currentPhaseIndex > 5) {
-                        this.currentPhaseIndex = 0;
+                    this.sleep(2).then(() => {
+                        this.currentPhaseIndex++;
+                        if (this.currentPhaseIndex > 5) {
+                            this.currentPhaseIndex = 0;
+                        }
+
+                        this.handleCurrentPhase();
+                    });
+                },
+                selectTrumpSuit(index) {
+                    this.playSound();
+                    this.trumpSuitIndex = index;
+                    this.showToast(
+                        this.upperCaseFirstLetter(
+                            Object.keys(this.suits)[index]
+                        ) + ' foi selecionado como nipe trunfo'
+                    );
+                    this.goToNextPhase();
+                },
+                cardClicked(index) {
+                    if (this.isCardClickable) {
+                        if (this.currentPhaseIndex === 3) {
+                            if (this.players[0].cardsInHand[index].selected 
+                                || this.players[0].cardsInHand.filter(c => c.selected).length < 3) {
+                                this.players[0].cardsInHand[index].selected = !this.players[0].cardsInHand[index].selected;
+                                this.reloadCardsInHand(0);
+                            }
+                        } else {
+                            this.playCard(index);
+                        }
+                    }
+                },
+                exchangePlayerCards() {
+                    this.playSound();
+                    this.exchangeCardsButtonPressed = true;
+                    let exchangedPlayers = [];
+
+                    for (let i = 0; i < this.players.length; i++) {
+                        let selectedCards = this.players[i].cardsInHand.filter(c => c.selected);
+
+                        if (selectedCards.length) {
+                            this.showToast('O jogador ' + (i + 1) + ' decidiu trocar ' + selectedCards.length + ' cartas');
+                            lastPlayerWithSelectedCards = i;
+
+                            selectedCards.forEach(sc => {
+                                this.players[i].cardsInHand.splice(
+                                    this.players[i].cardsInHand.findIndex(c => c.name === sc.name)
+                                , 1);
+                            });
+
+                            this.sleep().then(() => {
+                                for (let j = 0; j < selectedCards.length; j++) {
+                                    this.sleep(j + 1).then(() => {
+                                        this.players[i].cardsInHand.push(this.pickNextCard());
+
+                                        if (j >= selectedCards.length - 1) {
+                                            exchangedPlayers.push(i);
+                                        }
+                                        
+                                        if (exchangedPlayers.length >= 4) {
+                                            this.goToNextPhase();
+                                        }
+                                    });
+                                }
+                            });
+                        } else {
+                            this.showToast('O jogador ' + (i + 1) + ' decidiu não trocar nenhuma carta');
+                            exchangedPlayers.push(i);
+
+                            if (exchangedPlayers.length >= 4) {
+                                this.goToNextPhase();
+                            }
+                        }
+                    }
+                },
+                updateCardPowers() {
+                    let trumpSuit = Object.values(this.suits)[this.trumpSuitIndex];
+
+                    this.players.forEach(p => {
+                        p.cardsInHand.forEach(c => {
+                            if (c.suit === trumpSuit && c.power <= 8) {
+                                c.power += 8;
+                            }
+                        });
+                    });
+                },
+                getBestCardInHandIndex(index, basePower) {
+                    let highestCardIndex = 0;
+                    let lowestCardIndex = 0;
+
+                    for (let i = 1; i < this.players[index].cardsInHand.length; i++) {
+                        let c = this.players[index].cardsInHand[i];
+                        
+                        if (c.power < this.players[index].cardsInHand[highestCardIndex].power) {
+                            lowestCardIndex = i;
+                        }
+
+                        if (basePower && c.power > basePower && c.power < this.players[index].cardsInHand[highestCardIndex].power) {
+                            highestCardIndex = 1;
+                        } else if (c.power > this.players[index].cardsInHand[highestCardIndex].power) {
+                            highestCardIndex = i;
+                        }
                     }
 
-                    this.handleCurrentPhase();
+                    if (basePower) {
+                        if (this.players[index].cardsInHand[highestCardIndex].power > basePower) {
+                            return highestCardIndex;
+                        } else {
+                            return lowestCardIndex;
+                        }
+                    }
+
+                    return highestCardIndex;
+                },
+                playOrPass(value) {
+                    this.playSound();
+                    this.playOrPassButtonPressed = true;
+                    this.players[0].isPlaying = value;
+                    this.showToast('O jogador 1 decidiu ' + (this.players[0].isPlaying ? ' jogar' : ' passar'));
+                    this.goToNextPhase();
+                },
+                goToNextTrick() {
+                    this.currentTrick++;
+
+                    if (this.currentTrick > 5) {
+                        this.applyPoints();
+                    } else {
+                        this.currentTrickHighestCard = {
+                            player: null, 
+                            card: null
+                        };
+                        this.players.forEach(p => {
+                            p.currentCard = null;
+                        });
+
+                        if (this.lastWinner != null) {
+                            this.currentPlayerIndex = this.lastWinner;
+                        }
+                        
+                        if (!this.players[this.currentPlayerIndex].isPlaying) {
+                            this.passToNextPlayingPlayer();
+                        } else {
+                            this.comPlayCard();
+                        }
+                    }
+                },
+                passToNextPlayingPlayer() {
+                    do {
+                        this.currentPlayerIndex++;
+                        if (this.currentPlayerIndex > 3) {
+                            this.currentPlayerIndex = 0;
+                        }
+                    } while (!this.players[this.currentPlayerIndex].isPlaying);
+
+                    this.sleep(2).then(() => {
+                        this.comPlayCard();
+                    });                    
+                },
+                comPlayCard() {
+                    if (this.players[this.currentPlayerIndex].com) {
+                        if (this.players[this.currentPlayerIndex].isPlaying) {
+                            let basePower = null;
+                            if (this.currentTrickHighestCard.card !== null) {
+                                basePower = this.players[this.currentTrickHighestCard.player].currentCard.power;
+                            }
+
+                            if (basePower) {
+                                this.playCard(this.getBestCardInHandIndex(this.currentPlayerIndex, basePower));
+                            } else {
+                                this.playCard(this.getRandomArbitrary(0, this.players[this.currentPlayerIndex].cardsInHand.length - 1));
+                            }
+                        } else {
+                            this.passToNextPlayingPlayer();
+                        }
+                    }
+                },
+                playCard(index) {
+                    this.playSound();
+                    this.players[this.currentPlayerIndex].currentCard = this.players[this.currentPlayerIndex].cardsInHand.splice(index, 1)[0];
+
+                    this.sleep(2).then(() => {
+                        if (this.currentTrickHighestCard.card === null 
+                            || this.players[this.currentPlayerIndex].currentCard.power > this.players[this.currentTrickHighestCard.player].currentCard.power) {
+                            this.currentTrickHighestCard.player = this.currentPlayerIndex;
+                            this.currentTrickHighestCard.card = index;
+                            this.players.forEach(p => {
+                                if (p.currentCard) {
+                                    p.currentCard.winning = false;
+                                }
+                            });
+                            this.players[this.currentPlayerIndex].currentCard.winning = true;
+                            this.reloadCurrentPlayerCurrentCard();
+                        }
+
+                        if (this.players.filter(p => p.currentCard !== null).length >= this.players.filter(p => p.isPlaying).length) {
+                            this.findWinners();
+                        } else {
+                            this.passToNextPlayingPlayer();
+                        }
+                    });
+                },
+                findWinners() {
+                    this.lastWinner = this.currentTrickHighestCard.player;
+                    this.winners = [this.currentTrickHighestCard.player];
+
+                    for (let i = 0; i < this.players.length; i++) {
+                        let p = this.players[i];
+
+                        if (p.isPlaying && i !== this.currentTrickHighestCard.player 
+                            && this.players[this.currentTrickHighestCard.player].currentCard.power === p.currentCard.power) {
+                            this.players[i].currentCard.winning = true;
+                            this.winners.push(i);
+                        }
+                    }
+
+                    if (this.winners.length > 1) {
+                        let winnersString = '';
+                        for (let i = 0; i < this.winners.length; i++) {
+                            let w = this.winners[i];
+
+                            if (i > 0 && i >= this.winners.length - 1) {
+                                winnersString += ' e ';
+                            } else if (winnersString.length) {
+                                winnersString += ', ';
+                            }
+
+                            winnersString += '' + (w + 1);
+                        }
+
+                        this.showToast('Os jogadores ' + winnersString + ' venceram a rodada');
+                    } else {
+                        this.showToast('O jogador ' + (this.currentTrickHighestCard.player + 1) + ' venceu a rodada');
+                    }
+
+                    this.winners.forEach(w => {
+                        this.players[w].currentTurnPoints++;
+                    });
+                    this.sleep(4).then(() => {                      
+                        this.goToNextTrick();
+                    });
+                },
+                applyPoints() {
+                    let lowestPoint = 0;
+
+                    for (let i = 0; i < this.players.length; i++) {
+                        if (this.players[i].isPlaying) {
+                            if (this.players[i].currentTurnPoints) {
+                                this.showToast('O jogador ' + (i + 1) + ' marcou ' + this.players[i].currentTurnPoints + (this.players[i].currentTurnPoints > 1 ? ' pontos' : ' ponto') + ' neste turno');
+                                this.players[i].points -= (this.players[i].currentTurnPoints);
+                            } else {
+                                this.showToast('O jogador ' + (i + 1) + '  não marcou nenhum ponto neste turno', 'red');
+                                if (i === this.currentTrumpSuitChoicePlayerIndex) {
+                                    this.players[i].points += 10;
+                                } else {
+                                    this.players[i].points += 5;
+                                }
+                            }
+
+                            if (this.players[i].points < lowestPoint) {
+                                lowestPoint = this.players[i].points;
+                            }
+                        }
+                    }
+
+                    let gameWinners = this.players.filter(p => p.points === lowestPoint);
+                    if (gameWinners.length === 1) {
+                        this.showToast('O jogador ' + gameWinners[0].name + ' venceu a partida');
+                        this.winner = gameWinners[0];
+                        this.gameStarted = false;
+                    } else {
+                        this.goToNextTurn();
+                    }
+                },
+                reloadCardsInHand(index) {
+                    let cardsInHand = this.players[index].cardsInHand;
+                    this.players[index].cardsInHand = [];
+                    this.players[index].cardsInHand = cardsInHand;
+                },
+                reloadCurrentPlayerCurrentCard() {
+                    let currentCard = this.players[this.currentPlayerIndex].currentCard;
+                    this.players[this.currentPlayerIndex].currentCard = null;
+                    this.players[this.currentPlayerIndex].currentCard = currentCard;
                 },
                 getRandomArbitrary(min, max) {
-                    return Math.random() * (max - min) + min;
+                    return Math.floor(Math.random() * (max - min + 1)) + min;
                 },
                 shuffle(array) {
                     var currentIndex = array.length, temporaryValue, randomIndex;
@@ -183,6 +747,60 @@
                     }
 
                     return array;
+                },
+                showToast(text, bgColor) {
+                    let options = {
+                        text: text,
+                        hideAfter: this.sleepInterval * 10
+                    };
+
+                    if (bgColor) {
+                        options.bgColor = bgColor;
+                    }
+
+                    $.toast(options);
+                },
+                upperCaseFirstLetter(str) {
+                    if (str && str.length > 1) {
+                        return str.substring(0, 1).toUpperCase() + str.substring(1);
+                    }
+
+                    return str;
+                },
+                sleep(times) {
+                    if (times === undefined) {
+                        times = 1;
+                    }
+
+                    return new Promise(resolve => {
+                        setTimeout(resolve, this.sleepInterval * times);
+                    });
+                },
+                setSound() {
+                    this.sound = document.createElement("audio");
+                    this.sound.src = 'assets/sounds/card.wav';
+                    this.sound.setAttribute("preload", "auto");
+                    this.sound.setAttribute("controls", "none");
+                    this.sound.style.display = "none";
+                },
+                playSound() {
+                    this.sound.pause();
+                    this.sound.play();
+                },
+                setCardSize() {
+                    let oldHeight = this.cardSize.height;
+                    this.cardSize.height = (this.window.innerHeight / 4) - (50 / 4);
+                    this.cardSize.width = (this.cardSize.height * this.cardSize.width) / oldHeight;
+                }
+            },
+            computed: {
+                isCardClickable() {
+                    return this.currentPhaseIndex === 3 || (
+                        this.currentPhaseIndex === 5 && this.currentPlayerIndex === 0 && this.players[0].currentCard === null
+                    );
+                },
+                sleepInterval() {
+                    return 1000 - this.gameSpeed;
                 }
             }
         });
