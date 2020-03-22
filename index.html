@@ -12,41 +12,23 @@
 <body>
     <div id="app">
         <div style="height: 100vh;">
-            <!-- <div style="position: relative; left: -50%;">
-                <div class="row justify-content-center"> -->
-                    <img v-for="(card, index) in players[3].cardsInHand" v-bind:key="index" 
-                        src="assets/img/cards/back-hor.jpg" class="player3-card" 
-                        :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[3].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
-                <!-- </div>
-            </div> -->
+            <img v-for="(card, index) in players[3].cardsInHand" v-bind:key="index" 
+                src="assets/img/cards/back-hor.jpg" class="player3-card" :width="cardSize.height"
+                :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[3].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
 
             <div class="row" style="height: 100vh;">
-                <!-- <div style="display: flex; flex-direction: column; align-content: center;">
-                    <img v-for="(card, index) in players[3].cardsInHand" 
-                     v-bind:key="index" src="assets/img/cards/back.jpg">
-                </div> -->
-                <!-- <div class="col">
-                    <div class="row">
-                        <div v-for="(card, index) in players[3].cardsInHand" v-bind:key="index"  class="col-12">
-                            <img src="assets/img/cards/back.jpg" class="py-1 rotate90">
-                        </div>
-                    </div>
-                </div> -->
                 <div class="col">
                     <div class="row justify-content-center" style="margin-top: 10px;">
                         <img v-for="(card, index) in players[2].cardsInHand" v-bind:key="index" 
-                            src="assets/img/cards/back.jpg" class="card-padding-x">
+                            src="assets/img/cards/back.jpg" class="card-padding-x" :height="cardSize.height">
                     </div>
-                    <!-- <div v-if="currentPlayerIndex === 0 && currentPhaseIndex === 1">
-            
-                    </div> -->
                 </div>
             </div>
 
             <div id="player0-cards">
                 <div style="position: relative; left: -50%;">
                     <div class="row justify-content-center">
-                        <img v-for="(card, index) in players[0].cardsInHand" v-bind:key="index" 
+                        <img v-for="(card, index) in players[0].cardsInHand" v-bind:key="index" :height="cardSize.height"
                             :src="'assets/img/cards/' + card.name + '.png'" class="card-padding-x">
                     </div>
                 </div>
@@ -138,8 +120,8 @@
                 currentPhaseIndex: 0,
                 cardsInDeck: [],
                 cardSize: {
-                    width: 129,
-                    height: 200
+                    width: 129 * 0.75,
+                    height: 200 * 0.75
                 },
                 window
             },

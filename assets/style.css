@@ -10,12 +10,6 @@ body {
     left: 50%;
 }
 
-/* #player3-cards {
-    position:absolute;
-    left:0;
-    top: 50%;
-} */
-
 .rotate90 {
     -webkit-transform: rotate(90deg);
     -moz-transform: rotate(90deg);
