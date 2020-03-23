@@ -12,7 +12,7 @@
 </head>
 <body>
     <div id="app">
-        <div style="height: 100vh;">
+        <div style="height: 100vh; overflow: hidden;">
             <div class="row justify-content-between">
                 <div class="col-auto">
                     <span class="m-3 font-weight-bold text-white">Criado por Samuel Alles Remlinger</span>
@@ -733,14 +733,9 @@
                 shuffle(array) {
                     var currentIndex = array.length, temporaryValue, randomIndex;
 
-                    // While there remain elements to shuffle...
                     while (0 !== currentIndex) {
-
-                        // Pick a remaining element...
                         randomIndex = Math.floor(Math.random() * currentIndex);
                         currentIndex -= 1;
-
-                        // And swap it with the current element.
                         temporaryValue = array[currentIndex];
                         array[currentIndex] = array[randomIndex];
                         array[randomIndex] = temporaryValue;
