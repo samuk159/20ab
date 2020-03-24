@@ -78,3 +78,9 @@ body {
 .position-absolute {
     position: absolute;
 }
+
+#back-button {
+    position: absolute;
+    left: 5px;
+    bottom: 5px;
+}

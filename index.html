@@ -11,8 +11,36 @@
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
-    <div id="app">
-        <div style="height: 100vh; overflow: hidden;">
+    <div id="app" style="height: 100vh; overflow: hidden;">
+        <div v-if="currentPage === 'menu'">
+            <div class="center-div">
+                <div style="position: relative; left: -50%; top: -50%;">
+                    <div class="row justify-content-center">
+                        <div class="form-group col-auto">
+                            <label for="nicknameInput">Apelido</label>
+                            <input type="text" class="form-control" id="nicknameInput" 
+                            placeholder="Digite um apelido" v-model="nickname">
+                        </div>
+                    </div>
+                    <div class="row justify-content-center">
+                        <button @click="goToPage('game')" type="button" 
+                            class="btn btn-secondary col-auto"
+                            :disabled="!nickname || nickname.length < 3 || nickname.length > 25">
+                            Um jogador
+                        </button>
+                    </div>
+                    <div class="row justify-content-center mt-3">
+                        <button @click="exchangePlayerCards()" type="button" 
+                            class="btn btn-secondary col-auto"
+                            :disabled="!nickname || nickname.length < 3 || nickname.length > 25">
+                            Multijogador
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="currentPage === 'game'">
             <div class="row justify-content-between">
                 <div class="col-auto">
                     <span class="m-3 font-weight-bold text-white">Criado por Samuel Alles Remlinger</span>
@@ -25,18 +53,26 @@
                 </div>
             </div>
 
-            <div :style="'margin-left: ' + (cardSize.height + 20) + 'px;'">
-                <span v-if="turn" class="font-weight-bold text-white">Turno: {{turn}}<br></span>
-                <span v-for="(player, index) in players" v-bind:key="'players-points-' + index" 
-                    class="font-weight-bold text-white">
-                    Jogador {{index + 1}}: {{player.points}}
-                    {{player.currentTurnPoints ? ('-' + player.currentTurnPoints) : ''}}
-                <br></span>
-                <span v-if="turn" class="font-weight-bold text-white">
-                    Fase: {{phases[currentPhaseIndex].name}}<br>
-                </span>
-                <span class="font-weight-bold text-white">Nipe trunfo: </span>
-                <img v-if="trumpSuitIndex !== null" :src="'assets/img/suits/' + Object.values(suits)[trumpSuitIndex] + '.png'">
+            <div class="row">
+                <div class="col">
+                    <div :style="'margin-left: ' + (cardSize.height + 30) + 'px;'">
+                        <span v-if="turn" class="font-weight-bold text-white">Turno: {{turn}}<br></span>                
+                        <span v-if="turn" class="font-weight-bold text-white">
+                            Fase: {{phases[currentPhaseIndex].name}}<br>
+                        </span>
+                        <span class="font-weight-bold text-white">Nipe trunfo: </span>
+                        <img v-if="trumpSuitIndex !== null" :src="'assets/img/suits/' + Object.values(suits)[trumpSuitIndex] + '.png'">
+                    </div>
+                </div>
+                <div class="col">
+                    <p class="text-right" :style="'margin-right: ' + (cardSize.height + 30) + 'px;'">
+                        <span v-for="(player, index) in players" v-bind:key="'players-points-' + index" 
+                            class="font-weight-bold text-white">
+                            {{players[index].name}}: {{player.points}}
+                            {{player.currentTurnPoints ? ('-' + player.currentTurnPoints) : ''}}
+                        <br></span>
+                    </p>
+                </div>
             </div>
 
             <div v-if="players[3].isPlaying">
@@ -147,7 +183,7 @@
 
                     <div v-if="winner">
                         <span class="font-weight-bold text-white col-auto">
-                            O jogador {{winner.name}} venceu a partida
+                            {{winner.name}} venceu a partida
                         </span>
                     </div>
 
@@ -160,6 +196,10 @@
                 </div>
             </div>
         </div>
+
+        <button v-if="currentPage !== 'menu'" id="back-button" type="button" class="btn btn-secondary" @click="goBack()">
+            Voltar
+        </button>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
@@ -167,6 +207,7 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="./assets/js/jquery.toast.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2/dist/socket.io.js"></script>
     <script>
         var app = new Vue({
             el: '#app',
@@ -194,7 +235,7 @@
                     },
                     {
                         id: 1,
-                        name: 'Jogador 2',
+                        name: '[COM] Jogador 2',
                         com: true,
                         points: 20,
                         cardsInHand: [],
@@ -204,7 +245,7 @@
                     },
                     {
                         id: 2,
-                        name: 'Jogador 3',
+                        name: '[COM] Jogador 3',
                         com: true,
                         points: 20,
                         cardsInHand: [],
@@ -214,7 +255,7 @@
                     },
                     {
                         id: 3,
-                        name: 'Jogador 4',
+                        name: '[COM] Jogador 4',
                         com: true,
                         points: 20,
                         cardsInHand: [],
@@ -272,13 +313,35 @@
                 winners: [],
                 lastWinner: null,
                 winner: null,
-                gameStarted: false
+                gameStarted: false,
+                pages: [
+                    'menu',
+                    'game'
+                ],
+                currentPage: 'menu',
+                lastPage: null,
+                nickname: ''
             },
             mounted() {
+                /*var socket = io('https://shrouded-ravine-59156.herokuapp.com');
+                socket.on('connect', function(){
+                    debugger;
+                });
+                socket.on('event', function(data){
+                    debugger;
+                });
+                socket.on('disconnect', function(){
+                    debugger;
+                });*/
                 this.window = window;
                 this.setCardSize();
                 this.setSound();
                 this.generateCards();
+                
+                let nickname = localStorage.getItem('nickname');
+                if (nickname && nickname.length) {
+                    this.nickname = nickname;
+                }
             },
             methods: {
                 generateCards() {
@@ -311,7 +374,7 @@
                         this.currentTrumpSuitChoicePlayerIndex = 0;
                     }
                     this.currentPlayerIndex = this.currentTrumpSuitChoicePlayerIndex;
-                    this.showToast('O jogador ' + (this.currentTrumpSuitChoicePlayerIndex + 1) + ' irá escolher o nipe trunfo');
+                    this.showToast(this.players[this.currentTrumpSuitChoicePlayerIndex].name + ' irá escolher o nipe trunfo');
 
                     this.turn++;
                     this.lastWinner = null;
@@ -423,7 +486,7 @@
                                     });
 
                                     this.players[i].isPlaying = totalPower > 20;
-                                    this.showToast('O jogador ' + (i + 1) + ' decidiu ' + (this.players[i].isPlaying ? ' jogar' : ' passar'));
+                                    this.showToast(this.players[i].name + ' decidiu ' + (this.players[i].isPlaying ? ' jogar' : ' passar'));
 
                                     if (!this.players[i].isPlaying) {
                                         this.playSound();
@@ -485,8 +548,7 @@
                         let selectedCards = this.players[i].cardsInHand.filter(c => c.selected);
 
                         if (selectedCards.length) {
-                            this.showToast('O jogador ' + (i + 1) + ' decidiu trocar ' + selectedCards.length + ' cartas');
-                            lastPlayerWithSelectedCards = i;
+                            this.showToast(this.players[i].name + ' decidiu trocar ' + selectedCards.length + ' cartas');
 
                             selectedCards.forEach(sc => {
                                 this.players[i].cardsInHand.splice(
@@ -510,7 +572,7 @@
                                 }
                             });
                         } else {
-                            this.showToast('O jogador ' + (i + 1) + ' decidiu não trocar nenhuma carta');
+                            this.showToast(this.players[i].name + ' decidiu não trocar nenhuma carta');
                             exchangedPlayers.push(i);
 
                             if (exchangedPlayers.length >= 4) {
@@ -562,7 +624,7 @@
                     this.playSound();
                     this.playOrPassButtonPressed = true;
                     this.players[0].isPlaying = value;
-                    this.showToast('O jogador 1 decidiu ' + (this.players[0].isPlaying ? ' jogar' : ' passar'));
+                    this.showToast(this.players[0].name + ' decidiu ' + (this.players[0].isPlaying ? ' jogar' : ' passar'));
                     this.goToNextPhase();
                 },
                 goToNextTrick() {
@@ -662,7 +724,7 @@
                     if (this.winners.length > 1) {
                         let winnersString = '';
                         for (let i = 0; i < this.winners.length; i++) {
-                            let w = this.winners[i];
+                            let w = this.players[this.winners[i]].name;
 
                             if (i > 0 && i >= this.winners.length - 1) {
                                 winnersString += ' e ';
@@ -673,9 +735,9 @@
                             winnersString += '' + (w + 1);
                         }
 
-                        this.showToast('Os jogadores ' + winnersString + ' venceram a rodada');
+                        this.showToast(winnersString + ' venceram a rodada');
                     } else {
-                        this.showToast('O jogador ' + (this.currentTrickHighestCard.player + 1) + ' venceu a rodada');
+                        this.showToast(this.players[this.currentTrickHighestCard.player ].name + ' venceu a rodada');
                     }
 
                     this.winners.forEach(w => {
@@ -691,10 +753,10 @@
                     for (let i = 0; i < this.players.length; i++) {
                         if (this.players[i].isPlaying) {
                             if (this.players[i].currentTurnPoints) {
-                                this.showToast('O jogador ' + (i + 1) + ' marcou ' + this.players[i].currentTurnPoints + (this.players[i].currentTurnPoints > 1 ? ' pontos' : ' ponto') + ' neste turno');
+                                this.showToast(this.players[i].name + ' marcou ' + this.players[i].currentTurnPoints + (this.players[i].currentTurnPoints > 1 ? ' pontos' : ' ponto') + ' neste turno');
                                 this.players[i].points -= (this.players[i].currentTurnPoints);
                             } else {
-                                this.showToast('O jogador ' + (i + 1) + '  não marcou nenhum ponto neste turno', 'red');
+                                this.showToast(this.players[i].name + ' não marcou nenhum ponto neste turno', 'red');
                                 if (i === this.currentTrumpSuitChoicePlayerIndex) {
                                     this.players[i].points += 10;
                                 } else {
@@ -710,7 +772,7 @@
 
                     let gameWinners = this.players.filter(p => p.points === lowestPoint);
                     if (gameWinners.length === 1) {
-                        this.showToast('O jogador ' + gameWinners[0].name + ' venceu a partida');
+                        this.showToast(gameWinners[0].name + ' venceu a partida');
                         this.winner = gameWinners[0];
                         this.gameStarted = false;
                     } else {
@@ -786,6 +848,28 @@
                     let oldHeight = this.cardSize.height;
                     this.cardSize.height = (this.window.innerHeight / 4) - (50 / 4);
                     this.cardSize.width = (this.cardSize.height * this.cardSize.width) / oldHeight;
+                },
+                goToPage(page) {
+                    this.playSound();
+                    this.lastPage = this.currentPage;
+                    this.currentPage = page;
+                    this.handleCurrentPage();
+                },
+                goBack() {
+                    this.playSound();
+                    this.currentPage = this.lastPage;
+                    this.handleCurrentPage();
+                },
+                handleCurrentPage() {
+                    switch (this.currentPage) {
+                        case 'game': {
+                            this.players[0].name = this.nickname;
+                            localStorage.setItem('nickname', this.nickname);
+                            this.startGame();
+
+                            break;
+                        }
+                    }
                 }
             },
             computed: {
