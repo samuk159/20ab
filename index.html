@@ -30,7 +30,7 @@
                         </button>
                     </div>
                     <div class="row justify-content-center mt-3">
-                        <button @click="exchangePlayerCards()" type="button" 
+                        <button @click="goToPage('lobby')" type="button" 
                             class="btn btn-secondary col-auto"
                             :disabled="!nickname || nickname.length < 3 || nickname.length > 25">
                             Multijogador
@@ -38,6 +38,16 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <div v-if="currentPage === 'lobby'">
+          <div class="center-div">
+            <div style="position: relative; left: -50%; top: -50%;">
+              <div v-if="loading" class="spinner-border text-primary" role="status" style="width: 5rem; height: 5rem;">
+                <span class="sr-only">Carregando...</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div v-if="currentPage === 'game'">
@@ -69,7 +79,7 @@
                         <span v-for="(player, index) in players" v-bind:key="'players-points-' + index" 
                             class="font-weight-bold text-white">
                             {{players[index].name}}: {{player.points}}
-                            {{player.currentTurnPoints ? ('-' + player.currentTurnPoints) : ''}}
+                            {{' - ' + player.currentTurnPoints}}
                         <br></span>
                     </p>
                 </div>
@@ -317,23 +327,16 @@
                 gameStarted: false,
                 pages: [
                     'menu',
-                    'game'
+                    'game',
+                    'lobby'
                 ],
                 currentPage: 'menu',
                 lastPage: null,
-                nickname: ''
+                nickname: '',
+                socket: null,
+                loading: false
             },
             mounted() {
-                /*var socket = io('https://shrouded-ravine-59156.herokuapp.com');
-                socket.on('connect', function(){
-                    debugger;
-                });
-                socket.on('event', function(data){
-                    debugger;
-                });
-                socket.on('disconnect', function(){
-                    debugger;
-                });*/
                 this.window = window;
                 this.setCardSize();
                 this.setSound();
@@ -360,6 +363,7 @@
                     });
                 },
                 startGame() {
+                    this.setPlayersIds();
                     this.winner = null;
                     this.gameStarted = true;
                     this.currentTrumpSuitChoicePlayerIndex = this.getRandomArbitrary(0, 3);
@@ -613,7 +617,7 @@
                     }
 
                     if (basePower) {
-                        if (this.players[index].cardsInHand[highestCardIndex].power > basePower) {
+                        if (this.players[index].cardsInHand[highestCardIndex].power > basePower && this.getRandomArbitrary(1, 2) === 2) {
                             return highestCardIndex;
                         } else {
                             return lowestCardIndex;
@@ -758,7 +762,7 @@
                                 this.showToast(this.players[i].name + ' marcou ' + this.players[i].currentTurnPoints + (this.players[i].currentTurnPoints > 1 ? ' pontos' : ' ponto') + ' neste turno');
                                 this.players[i].points -= (this.players[i].currentTurnPoints);
                             } else {
-                                this.showToast(this.players[i].name + ' não marcou nenhum ponto neste turno', 'red');
+                                this.showToastError(this.players[i].name + ' não marcou nenhum ponto neste turno');
                                 if (i === this.currentTrumpSuitChoicePlayerIndex) {
                                     this.players[i].points += 10;
                                 } else {
@@ -819,6 +823,12 @@
 
                     $.toast(options);
                 },
+                showToastSuccess(text) {
+                    this.showToast(text, 'green');
+                },
+                showToastError(text) {
+                    this.showToast(text, 'red');
+                },
                 upperCaseFirstLetter(str) {
                     if (str && str.length > 1) {
                         return str.substring(0, 1).toUpperCase() + str.substring(1);
@@ -871,6 +881,10 @@
 
                             break;
                         }
+                        case 'lobby': {
+                          this.getSocket();
+                          break;
+                        }
                     }
                 },
                 setComPlayersRandomNames() {
@@ -883,7 +897,7 @@
                     });
 
                     if (numberOfComPlayers) {
-                        axios.get('https://uinames.com/api/?amount=' + numberOfComPlayers + '&region=brazil')
+                        axios.get('https://uinames.com/api/?amount=' + numberOfComPlayers + '&region=germany')
                         .then(response => {
                             if (response && response.data && response.data.length) {
                                 let j = 0;
@@ -900,6 +914,37 @@
                             console.error(error);
                         })
                     }
+                },
+                setPlayersIds() {
+                  this.players.forEach(p => {
+                    p.id = this.getUUID();
+                  });
+                },
+                getUUID() {
+                  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                  });
+                },
+                getSocket() {
+                  if (!this.socket) {
+                    this.loading = true;
+                    this.showToast('Conectando ao servidor');
+                    this.socket = io('https://server-20ab.herokuapp.com');
+                    this.socket.on('connect', () => {
+                      this.loading = false;
+                      this.showToastSuccess('Conectado ao servidor');
+                    });
+                    this.socket.on('event', data => {
+                        debugger;
+                    });
+                    this.socket.on('disconnect', () => {
+                      this.loading = false;
+                      this.showToastError('Desconectado do servidor');
+                    });
+                  }
+
+                  return this.socket;
                 }
             },
             computed: {
