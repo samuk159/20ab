@@ -69,7 +69,7 @@
               <div v-if="!loading && rooms && rooms.length" :style="'overflow: scroll; max-height: ' + (window.innerHeight - 250) + 'px;'">
                 <div v-for="(room, index) in rooms" class="row my-3" :key="'room-' + index" :class="{ 'bg-light': index % 2 != 0 }">
                   <div class="col">{{room.name}}</div>
-                  <div class="col">{{room.players ? room.players.length : 0}}</div>
+                  <div class="col">{{room.players ? room.players.length : 0}} / 4</div>
                   <div class="col">
                     <span v-if="room.inGame" class="badge badge-success">
                       Em jogo
@@ -92,8 +92,41 @@
                   </div>
                 </div>
                 <div class="col-auto">
-                  <button type="button" class="btn btn-success" @click="createRoom()"
+                  <button v-if="connected" type="button" class="btn btn-success" @click="createRoom()"
                     :disabled="!newRoom || !newRoom.name || newRoom.name.length < 3 || newRoom.name.length > 30">Criar sala</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="center-div">
+          <div style="position: relative; left: -50%;">
+            <div v-if="currentPage === 'room'">
+              <div v-if="currentRoom" class="card m-3">
+                <div class="card-header">
+                  <div class="row justify-content-between">
+                    <div class="col-auto">
+                      {{currentRoom.name}}
+                    </div>
+                    <div class="col-auto">
+                      {{currentRoom.players ? currentRoom.players.length : 0}} / 4
+                    </div>
+                  </div>
+                </div>
+                <div class="card-body py-0 px-3">
+                  <div v-if="currentRoom.players && currentRoom.players.length">
+                    <div v-for="(player, index) in currentRoom.players" class="row my-3" :key="'room-' + index" :class="{ 'bg-light': index % 2 != 0 }">
+                      <div class="col">{{player.name}}</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-footer">
+                  <div class="row justify-content-end">
+                    <div class="col-auto">
+                      <button type="button" class="btn btn-primary" @click="goToPage('game')">Iniciar partida</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -378,7 +411,8 @@
                 pages: [
                     'menu',
                     'game',
-                    'lobby'
+                    'lobby',
+                    'room'
                 ],
                 currentPage: 'menu',
                 lastPage: null,
@@ -404,13 +438,19 @@
                   }
                 ],*/
                 newRoom: {
+                  id: null,
                   name: null,
                   players: [],
                   inGame: false
-                }
+                },
+                currentRoom: null,
+                playerId: null,
+                connected: false,
+                socketIOServerURL: 'https://server-20ab.herokuapp.com'
             },
             mounted() {
                 this.window = window;
+                this.playerId = this.getUUID();
                 this.setCardSize();
                 this.setSound();
                 this.generateCards();
@@ -959,16 +999,36 @@
                             break;
                         }
                         case 'lobby': {
+                          this.currentRoom = null;
                           this.getSocket();
+                          break;
+                        }
+                        case 'menu': {
+                          this.currentRoom = null;
                           break;
                         }
                     }
                 },
                 createRoom() {
-
+                  this.currentRoom = JSON.parse(JSON.stringify(this.newRoom));
+                  this.currentRoom.id = this.getUUID();
+                  this.currentRoom.players.push({
+                    id: this.playerId,
+                    name: this.nickname,
+                    com: false
+                  });
+                  this.goToPage('room');
                 },
                 enterRoom(room) {
-
+                  
+                },
+                getRooms() {
+                  this.sendEvent({
+                    channel: 'getRooms',
+                    message: {
+                      id: this.playerId
+                    }
+                  });
                 },
                 setComPlayersRandomNames() {
                     let numberOfComPlayers = 0;
@@ -1010,24 +1070,83 @@
                   });
                 },
                 getSocket() {
-                  /*if (!this.socket) {
+                  if (!this.socket) {
                     this.loading = true;
                     this.showToast('Conectando ao servidor');
-                    this.socket = io('https://server-20ab.herokuapp.com');
+                    this.socket = io(this.socketIOServerURL);
+
                     this.socket.on('connect', () => {
                       this.loading = false;
+                      this.connected = true;
                       this.showToastSuccess('Conectado ao servidor');
+                      this.getRooms();
                     });
-                    this.socket.on('event', data => {
-                        debugger;
-                    });
+
                     this.socket.on('disconnect', () => {
                       this.loading = false;
+                      this.connected = false;
                       this.showToastError('Desconectado do servidor');
+                    });
+
+                    this.socket.on(this.playerId, data => { debugger;
+                      try {
+                        if (data) {
+                          let obj = JSON.parse(data);
+
+                          if (obj.request && obj.response) {
+                            switch (obj.request) {
+                              case 'getRooms': {
+                                let index = this.rooms.findIndex(r => r.id === obj.response.id);
+                                if (index > -1) {
+                                  this.rooms[index] = obj.response;
+                                } else {
+                                  this.rooms.push(obj.response);
+                                }
+
+                                break;
+                              }
+                            }
+                          }
+                        }
+                      } catch (e) {
+                        console.error(e);
+                      }
+                    });
+
+                    this.socket.on('getRooms', data => { debugger;
+                      try {
+                        if (data) {
+                          let obj = JSON.parse(data);
+
+                          if (obj.id && this.currentRoom) {
+                            this.sendEvent({
+                              channel: obj.id,
+                              message: {
+                                request: 'getRooms',
+                                response: this.currentRoom
+                              }
+                            });
+                          }
+                        }
+                      } catch (e) {
+                        console.error(e);
+                      }
                     });
                   }
 
-                  return this.socket;*/
+                  return this.socket;
+                },
+                sendEvent(data) {
+                  /*axios.post({
+                    method: 'POST',
+                    headers: { 'security-key': 'F3gJ5qMsoGn7F9GavrMq' },
+                    data: data,
+                    url: this.socketIOServerURL + '/event',
+                  }).then(response => {debugger;})
+                  .catch(function (error) { debugger;
+                    console.error(error);
+                  })*/
+                  this.socket.emit(data.channel, data.message);
                 }
             },
             computed: {
