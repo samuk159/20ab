@@ -41,10 +41,60 @@
         </div>
 
         <div v-if="currentPage === 'lobby'">
-          <div class="center-div">
-            <div style="position: relative; left: -50%; top: -50%;">
-              <div v-if="loading" class="spinner-border text-primary" role="status" style="width: 5rem; height: 5rem;">
-                <span class="sr-only">Carregando...</span>
+          <div class="card m-3">
+            <div class="card-header">
+              Salas
+              <div class="row">
+                <div class="col font-weight-bold">Nome</div>
+                <div class="col font-weight-bold">Número de jogadores</div>
+                <div class="col font-weight-bold">Status</div>
+                <div class="col font-weight-bold">Ações</div>
+              </div>
+            </div>
+            <div class="card-body py-0 px-3">
+              <div v-if="loading" class="row justify-content-center mx-0 py-3">
+                <div class="col-auto">
+                  <div class="spinner-border text-primary" role="status" style="width: 5rem; height: 5rem;">
+                    <span class="sr-only">Carregando...</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div v-if="!loading && (!rooms || !rooms.length)" class="row bg-light mx-0 py-3">
+                <div class="col text-center">
+                  Nenhuma sala encontrada
+                </div>
+              </div>
+
+              <div v-if="!loading && rooms && rooms.length" :style="'overflow: scroll; max-height: ' + (window.innerHeight - 250) + 'px;'">
+                <div v-for="(room, index) in rooms" class="row my-3" :key="'room-' + index" :class="{ 'bg-light': index % 2 != 0 }">
+                  <div class="col">{{room.name}}</div>
+                  <div class="col">{{room.players ? room.players.length : 0}}</div>
+                  <div class="col">
+                    <span v-if="room.inGame" class="badge badge-success">
+                      Em jogo
+                    </span>
+                    <span v-else class="badge badge-warning">
+                      Em espera
+                    </span>
+                  </div>
+                  <div class="col">
+                    <button type="button" class="btn btn-primary" @click="enterRoom(room)">Entrar</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card-footer">
+              <div class="row justify-content-end">
+                <div class="col-auto">
+                  <div class="form-group">
+                    <input v-model="newRoom.name" type="text" class="form-control" id="newRoomName" placeholder="Insira o nome da sala">
+                  </div>
+                </div>
+                <div class="col-auto">
+                  <button type="button" class="btn btn-success" @click="createRoom()"
+                    :disabled="!newRoom || !newRoom.name || newRoom.name.length < 3 || newRoom.name.length > 30">Criar sala</button>
+                </div>
               </div>
             </div>
           </div>
@@ -334,7 +384,30 @@
                 lastPage: null,
                 nickname: '',
                 socket: null,
-                loading: false
+                loading: false,
+                rooms: [],
+                /*rooms: [
+                  {
+                    name: 'Teste1',
+                    players: [1, 2, 3],
+                    inGame: true
+                  },
+                  {
+                    name: 'Teste2',
+                    players: [1],
+                    inGame: false
+                  },
+                  {
+                    name: 'Teste3',
+                    players: [1,2],
+                    inGame: false
+                  }
+                ],*/
+                newRoom: {
+                  name: null,
+                  players: [],
+                  inGame: false
+                }
             },
             mounted() {
                 this.window = window;
@@ -346,6 +419,10 @@
                 if (nickname && nickname.length) {
                     this.nickname = nickname;
                 }
+
+                /*for (let i = 0; i < 4; i++) {
+                  this.rooms.push(...this.rooms);
+                }*/
             },
             methods: {
                 generateCards() {
@@ -887,6 +964,12 @@
                         }
                     }
                 },
+                createRoom() {
+
+                },
+                enterRoom(room) {
+
+                },
                 setComPlayersRandomNames() {
                     let numberOfComPlayers = 0;
 
@@ -927,7 +1010,7 @@
                   });
                 },
                 getSocket() {
-                  if (!this.socket) {
+                  /*if (!this.socket) {
                     this.loading = true;
                     this.showToast('Conectando ao servidor');
                     this.socket = io('https://server-20ab.herokuapp.com');
@@ -944,17 +1027,17 @@
                     });
                   }
 
-                  return this.socket;
+                  return this.socket;*/
                 }
             },
             computed: {
                 isCardClickable() {
-                    return this.currentPhaseIndex === 3 || (
-                        this.currentPhaseIndex === 5 && this.currentPlayerIndex === 0 && this.players[0].currentCard === null
-                    );
+                  return this.currentPhaseIndex === 3 || (
+                      this.currentPhaseIndex === 5 && this.currentPlayerIndex === 0 && this.players[0].currentCard === null
+                  );
                 },
                 sleepInterval() {
-                    return 1000 - this.gameSpeed;
+                  return 1000 - this.gameSpeed;
                 }
             }
         });
