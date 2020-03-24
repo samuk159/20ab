@@ -208,6 +208,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="./assets/js/jquery.toast.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2/dist/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
         var app = new Vue({
             el: '#app',
@@ -235,7 +236,7 @@
                     },
                     {
                         id: 1,
-                        name: '[COM] Jogador 2',
+                        name: 'Jogador 2',
                         com: true,
                         points: 20,
                         cardsInHand: [],
@@ -245,7 +246,7 @@
                     },
                     {
                         id: 2,
-                        name: '[COM] Jogador 3',
+                        name: 'Jogador 3',
                         com: true,
                         points: 20,
                         cardsInHand: [],
@@ -255,7 +256,7 @@
                     },
                     {
                         id: 3,
-                        name: '[COM] Jogador 4',
+                        name: 'Jogador 4',
                         com: true,
                         points: 20,
                         cardsInHand: [],
@@ -365,6 +366,7 @@
                     this.players.forEach(p => {
                         p.points = 20;
                     });
+                    this.setComPlayersRandomNames();
                     this.goToNextTurn(); 
                 },
                 goToNextTurn() {
@@ -869,6 +871,34 @@
 
                             break;
                         }
+                    }
+                },
+                setComPlayersRandomNames() {
+                    let numberOfComPlayers = 0;
+
+                    this.players.forEach(p => {
+                        if (p.com) {
+                            numberOfComPlayers++;
+                        }
+                    });
+
+                    if (numberOfComPlayers) {
+                        axios.get('https://uinames.com/api/?amount=' + numberOfComPlayers + '&region=brazil')
+                        .then(response => {
+                            if (response && response.data && response.data.length) {
+                                let j = 0;
+
+                                for (let i = 0; i < this.players.length; i++) {
+                                    if (this.players[i].com) {
+                                        this.players[i].name = response.data[j].name;
+                                        j++;
+                                    }
+                                }
+                            }
+                        })
+                        .catch(function (error) {
+                            console.error(error);
+                        })
                     }
                 }
             },
