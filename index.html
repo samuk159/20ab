@@ -285,7 +285,7 @@
                     <div v-if="!gameStarted">
                         <div class="row justify-content-center pt-3">
                             <button @click="startGame()" type="button" 
-                                class="btn btn-secondary col-auto">Iniciar partida</button>
+                                class="btn btn-secondary col-auto">Reiniciar partida</button>
                         </div>
                     </div>
                 </div>
@@ -409,7 +409,7 @@
                 winners: [],
                 lastWinner: null,
                 winner: null,
-                gameStarted: false,
+                gameStarted: true,
                 pages: [
                     'menu',
                     'game',
@@ -482,7 +482,15 @@
                     });
                 },
                 startGame() {
-                    this.setPlayersIds();
+                  if (this.currentRoom && this.currentRoom.players && this.currentRoom.players.length && this.currentRoom.players[0].id === this.playerId) {
+                    this.currentRoom.inGame = true;
+                    this.sendEvent({
+                      channel: 'roomUpdate',
+                      message: this.currentRoom
+                    });
+                  }
+
+                    /*this.setPlayersIds();
                     this.winner = null;
                     this.gameStarted = true;
                     this.currentTrumpSuitChoicePlayerIndex = this.getRandomArbitrary(0, 3);
@@ -490,7 +498,7 @@
                         p.points = 20;
                     });
                     this.setComPlayersRandomNames();
-                    this.goToNextTurn(); 
+                    this.goToNextTurn(); */
                 },
                 goToNextTurn() {
                     this.playSound();
@@ -1039,6 +1047,11 @@
                 },
                 handleCurrentPage() {
                     switch (this.currentPage) {
+                        case 'menu': {
+                            this.currentRoom = null;
+
+                            break;
+                        }
                         case 'game': {
                             this.players[0].name = this.nickname;
                             localStorage.setItem('nickname', this.nickname);
@@ -1199,6 +1212,10 @@
                                 this.addOrUpdateRoom(data);
                             } else if (this.currentPage === 'room' && data.id === this.currentRoom.id) {
                                 this.currentRoom = data;
+
+                                if (this.currentRoom.inGame) {
+                                  this.goToPage('game');
+                                }
                             }
                         }
                       } catch (e) {
