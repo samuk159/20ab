@@ -446,7 +446,8 @@
                 currentRoom: null,
                 playerId: null,
                 connected: false,
-                socketIOServerURL: 'https://server-20ab.herokuapp.com'
+                socketIOServerURL: 'https://server-20ab.herokuapp.com',
+                roomsSearched: false
             },
             mounted() {
                 this.window = window;
@@ -1076,57 +1077,53 @@
                     this.socket = io(this.socketIOServerURL);
 
                     this.socket.on('connect', () => {
-                      this.loading = false;
                       this.connected = true;
+                      this.loading = false;
                       this.showToastSuccess('Conectado ao servidor');
-                      this.getRooms();
+
+                      if (!this.roomsSearched) {
+                        this.roomsSearched = true;
+                        this.getRooms();
+                      }
                     });
 
                     this.socket.on('disconnect', () => {
                       this.loading = false;
                       this.connected = false;
-                      this.showToastError('Desconectado do servidor');
+                      console.log('Desconectado do servidor');
                     });
 
-                    this.socket.on(this.playerId, data => { debugger;
+                    this.socket.on(this.playerId, data => {
                       try {
-                        if (data) {
-                          let obj = JSON.parse(data);
+                        if (data.request && data.response) {
+                            switch (data.request) {
+                                case 'getRooms': {
+                                    let index = this.rooms.findIndex(r => r.id === data.response.id);
+                                    if (index > -1) {
+                                        this.rooms[index] = data.response;
+                                    } else {
+                                        this.rooms.push(data.response);
+                                    }
 
-                          if (obj.request && obj.response) {
-                            switch (obj.request) {
-                              case 'getRooms': {
-                                let index = this.rooms.findIndex(r => r.id === obj.response.id);
-                                if (index > -1) {
-                                  this.rooms[index] = obj.response;
-                                } else {
-                                  this.rooms.push(obj.response);
+                                    break;
                                 }
-
-                                break;
-                              }
                             }
-                          }
                         }
                       } catch (e) {
                         console.error(e);
                       }
                     });
 
-                    this.socket.on('getRooms', data => { debugger;
+                    this.socket.on('getRooms', data => {
                       try {
-                        if (data) {
-                          let obj = JSON.parse(data);
-
-                          if (obj.id && this.currentRoom) {
+                        if (data.id && this.currentRoom) {
                             this.sendEvent({
-                              channel: obj.id,
-                              message: {
+                                channel: data.id,
+                                message: {
                                 request: 'getRooms',
                                 response: this.currentRoom
-                              }
+                                }
                             });
-                          }
                         }
                       } catch (e) {
                         console.error(e);
@@ -1137,16 +1134,7 @@
                   return this.socket;
                 },
                 sendEvent(data) {
-                  /*axios.post({
-                    method: 'POST',
-                    headers: { 'security-key': 'F3gJ5qMsoGn7F9GavrMq' },
-                    data: data,
-                    url: this.socketIOServerURL + '/event',
-                  }).then(response => {debugger;})
-                  .catch(function (error) { debugger;
-                    console.error(error);
-                  })*/
-                  this.socket.emit(data.channel, data.message);
+                  this.socket.emit('emit-event', JSON.stringify(data));
                 }
             },
             computed: {
