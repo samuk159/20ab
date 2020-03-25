@@ -417,7 +417,6 @@
                     'room'
                 ],
                 currentPage: 'menu',
-                lastPage: null,
                 nickname: '',
                 socket: null,
                 loading: false,
@@ -983,13 +982,59 @@
                 },
                 goToPage(page) {
                     this.playSound();
-                    this.lastPage = this.currentPage;
                     this.currentPage = page;
                     this.handleCurrentPage();
                 },
-                goBack() {
+                goBack(ignoreRoomUpdate) {
                     this.playSound();
-                    this.currentPage = this.lastPage;
+                    this.roomsSearched = false;
+
+                    if (!ignoreRoomUpdate) {
+                      if (this.currentPage === 'room' || (this.currentPage === 'game' && (this.connected || this.roomsSearched))) {
+                        if (this.socket && this.currentRoom && this.currentRoom.players && this.currentRoom.players.length) {
+                          if (this.currentRoom.players[0].id === this.playerId) {
+                            this.sendEvent({
+                              channel: 'roomRemoved',
+                              message: this.currentRoom
+                            });
+                          } else {
+                            let index = this.currentRoom.players.findIndex(p => p.id === this.playerId);
+
+                            if (index > -1) {
+                              this.currentRoom.players.splice(index, 1);
+
+                              this.sendEvent({
+                                channel: 'roomUpdate',
+                                message: this.currentRoom
+                              });
+                            }
+                          }
+                        }
+                      }
+                    }
+
+                    switch (this.currentPage) {
+                      case 'lobby': {
+                        this.currentPage = 'menu'; 
+                        break; 
+                      }
+                      case 'room': {
+                        this.currentPage = 'lobby'; 
+                        this.getRooms();
+                        break;
+                      }
+                      case 'game': {
+                        if (this.connected || this.roomsSearched) {
+                          this.currentPage = 'lobby';
+                          this.getRooms();
+                        } else {
+                          this.currentPage = 'menu';
+                        }
+
+                        break;
+                      }
+                    }
+
                     this.handleCurrentPage();
                 },
                 handleCurrentPage() {
@@ -1002,13 +1047,6 @@
                             break;
                         }
                         case 'lobby': {
-                            if (this.socket) {
-                                this.sendEvent({
-                                    channel: 'roomRemoved',
-                                    message: this.currentRoom
-                                });
-                            }
-
                           this.rooms = [];
                           this.currentRoom = null;
                           this.getSocket();
@@ -1027,30 +1065,41 @@
                   });
                   this.goToPage('room');
                   this.sendEvent({
-                    channel: 'newRoom',
+                    channel: 'roomUpdate',
                     message: this.currentRoom
                   });
                 },
                 enterRoom(room) {
                   this.currentRoom = room;
-                  this.currentRoom.players.push({
+                  let newPlayer = {
                     id: this.playerId,
                     name: this.nickname,
                     com: false
-                  });
+                  };
+
+                  let index = this.currentRoom.players.findIndex(p => p.id === this.playerId);
+                  if (index > -1) {
+                    this.currentRoom.players[index] = newPlayer;
+                  } else {
+                    this.currentRoom.players.push(newPlayer);
+                  }
+                  
                   this.goToPage('room');
                   this.sendEvent({
-                    channel: 'newRoom',
+                    channel: 'roomUpdate',
                     message: this.currentRoom
                   });
                 },
                 getRooms() {
-                  this.sendEvent({
-                    channel: 'getRooms',
-                    message: {
-                      id: this.playerId
-                    }
-                  });
+                  if (!this.roomsSearched) {
+                    this.roomsSearched = true;
+                    this.sendEvent({
+                      channel: 'getRooms',
+                      message: {
+                        id: this.playerId
+                      }
+                    });
+                  }
                 },
                 setComPlayersRandomNames() {
                     let numberOfComPlayers = 0;
@@ -1101,11 +1150,7 @@
                       this.connected = true;
                       this.loading = false;
                       this.showToastSuccess('Conectado ao servidor');
-
-                      if (!this.roomsSearched) {
-                        this.roomsSearched = true;
-                        this.getRooms();
-                      }
+                      this.getRooms();
                     });
 
                     this.socket.on('disconnect', () => {
@@ -1119,7 +1164,7 @@
                         if (data.request && data.response) {
                             switch (data.request) {
                                 case 'getRooms': {
-                                    this.addNewRoom(data.response);
+                                    this.addOrUpdateRoom(data.response);
                                     break;
                                 }
                             }
@@ -1147,11 +1192,11 @@
                       }
                     });
                     
-                    this.socket.on('newRoom', data => {
+                    this.socket.on('roomUpdate', data => {
                       try {
                         if (data) {
                             if (this.currentPage === 'lobby') {
-                                this.addNewRoom(data);
+                                this.addOrUpdateRoom(data);
                             } else if (this.currentPage === 'room' && data.id === this.currentRoom.id) {
                                 this.currentRoom = data;
                             }
@@ -1170,7 +1215,7 @@
                                     this.rooms.splice(index, 1);
                                 }
                             } else if (this.currentPage === 'room' && data.id === this.currentRoom.id) {
-                                this.goBack();
+                                this.goBack(true);
                             }
                         }
                       } catch (e) {
@@ -1184,13 +1229,19 @@
                 sendEvent(data) {
                   this.socket.emit('emit-event', JSON.stringify(data));
                 },
-                addNewRoom(room) {
+                addOrUpdateRoom(room) {
                     let index = this.rooms.findIndex(r => r.id === room.id);
                     if (index > -1) {
                         this.rooms[index] = room;
+                        this.reloadRooms();
                     } else {
                         this.rooms.push(room);
                     }
+                },
+                reloadRooms() {
+                  let rooms = this.rooms;
+                  this.rooms = [];
+                  this.rooms = rooms;
                 }
             },
             computed: {
