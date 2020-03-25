@@ -126,7 +126,7 @@
                     class="card-footer">
                   <div class="row justify-content-end">
                     <div class="col-auto">
-                      <button type="button" class="btn btn-primary" @click="goToPage('game')">Iniciar partida</button>
+                      <button type="button" class="btn btn-primary" @click="startCurrentRoom()">Iniciar partida</button>
                     </div>
                   </div>
                 </div>
@@ -327,7 +327,8 @@
                         cardsInHand: [],
                         currentCard: null,
                         isPlaying: true,
-                        currentTurnPoints: 0
+                        currentTurnPoints: 0,
+                        isRoomMaster: false
                     },
                     {
                         id: 1,
@@ -337,7 +338,8 @@
                         cardsInHand: [],
                         currentCard: null,
                         isPlaying: true,
-                        currentTurnPoints: 0
+                        currentTurnPoints: 0,
+                        isRoomMaster: false
                     },
                     {
                         id: 2,
@@ -347,7 +349,8 @@
                         cardsInHand: [],
                         currentCard: null,
                         isPlaying: true,
-                        currentTurnPoints: 0
+                        currentTurnPoints: 0,
+                        isRoomMaster: false
                     },
                     {
                         id: 3,
@@ -357,7 +360,8 @@
                         cardsInHand: [],
                         currentCard: null,
                         isPlaying: true,
-                        currentTurnPoints: 0
+                        currentTurnPoints: 0,
+                        isRoomMaster: false
                     },
                 ],
                 currentTrick: 0,
@@ -421,23 +425,6 @@
                 socket: null,
                 loading: false,
                 rooms: [],
-                /*rooms: [
-                  {
-                    name: 'Teste1',
-                    players: [1, 2, 3],
-                    inGame: true
-                  },
-                  {
-                    name: 'Teste2',
-                    players: [1],
-                    inGame: false
-                  },
-                  {
-                    name: 'Teste3',
-                    players: [1,2],
-                    inGame: false
-                  }
-                ],*/
                 newRoom: {
                   id: null,
                   name: null,
@@ -461,10 +448,6 @@
                 if (nickname && nickname.length) {
                     this.nickname = nickname;
                 }
-
-                /*for (let i = 0; i < 4; i++) {
-                  this.rooms.push(...this.rooms);
-                }*/
             },
             methods: {
                 generateCards() {
@@ -482,23 +465,28 @@
                     });
                 },
                 startGame() {
-                  if (this.currentRoom && this.currentRoom.players && this.currentRoom.players.length && this.currentRoom.players[0].id === this.playerId) {
-                    this.currentRoom.inGame = true;
-                    this.sendEvent({
-                      channel: 'roomUpdate',
-                      message: this.currentRoom
-                    });
-                  }
+                  this.winner = null;
+                  this.gameStarted = true;
+                  this.currentTrumpSuitChoicePlayerIndex = this.getRandomArbitrary(0, 3);
 
-                    /*this.setPlayersIds();
-                    this.winner = null;
-                    this.gameStarted = true;
-                    this.currentTrumpSuitChoicePlayerIndex = this.getRandomArbitrary(0, 3);
+                  if (this.currentRoom) {
+                    if (this.isMultiplayerGameAndIAmTheRoomMaster) {
+                      this.currentRoom.inGame = true;
+                      this.sendEvent({
+                        channel: 'roomUpdate',
+                        message: this.currentRoom
+                      });
+
+                      this.players = this.currentRoom.players;
+                      this.setComPlayersRandomNames();
+                    }
+                  } else {
                     this.players.forEach(p => {
                         p.points = 20;
                     });
                     this.setComPlayersRandomNames();
-                    this.goToNextTurn(); */
+                    this.goToNextTurn();
+                  }              
                 },
                 goToNextTurn() {
                     this.playSound();
@@ -526,7 +514,7 @@
                     });
 
                     this.sleep().then(() => {
-                        this.handleCurrentPhase();
+                      this.handleCurrentPhase();
                     });
                 },
                 shuffleDeck() {
@@ -535,11 +523,46 @@
                 handleCurrentPhase() {
                     switch (this.currentPhaseIndex) {
                         case 0: {
-                            for (let i = 0; i < this.players.length; i++) {
+                            if (this.isMultiplayerGameAndIAmTheRoomMaster) {
+                              let tempPlayers = JSON.parse(JSON.stringify(this.players));
+
+                              tempPlayers.forEach(p => {
+                                p.cardsInHand.push(this.pickNextCard(true));
+                                p.cardsInHand.push(this.pickNextCard(true));
+                              });
+
+                              this.sendEvent({
+                                channel: this.currentRoom.id,
+                                message: {
+                                  action: 'firstDraw',
+                                  data: tempPlayers
+                                }
+                              });
+
+                              for (let i = 0; i < tempPlayers.length; i++) {
+                                let tp = tempPlayers[i];
                                 let p = this.players[i];
 
                                 this.sleep().then(() => {
-                                    p.cardsInHand.push(this.pickNextCard());
+                                    this.playSound();
+                                    p.cardsInHand[0] = tp.cardsInHand[0];                                  
+
+                                    this.sleep().then(() => {
+                                        this.playSound();
+                                        p.cardsInHand[1] = tp.cardsInHand[1]; 
+
+                                        if (i >= this.players.length - 1) {
+                                            //this.goToNextPhase();
+                                        }
+                                    });
+                                });
+                              }
+                            } else {
+                              for (let i = 0; i < this.players.length; i++) {
+                                let p = this.players[i];
+
+                                this.sleep().then(() => {
+                                    p.cardsInHand.push(this.pickNextCard());                                   
 
                                     this.sleep().then(() => {
                                         p.cardsInHand.push(this.pickNextCard());
@@ -549,7 +572,9 @@
                                         }
                                     });
                                 });
+                              }
                             }
+                            
                             break;
                         }
                         case 1: {
@@ -635,9 +660,12 @@
                         }
                     }
                 },
-                pickNextCard() {
+                pickNextCard(ignoreSound) {
+                  if (!ignoreSound) {
                     this.playSound();
-                    return this.cardsInDeck.pop();
+                  }
+                  
+                  return this.cardsInDeck.pop();
                 },
                 goToNextPhase() {
                     this.sleep(2).then(() => {
@@ -1053,7 +1081,10 @@
                             break;
                         }
                         case 'game': {
-                            this.players[0].name = this.nickname;
+                            if (!this.currentRoom) {
+                              this.players[0].name = this.nickname;
+                            }
+                            
                             localStorage.setItem('nickname', this.nickname);
                             this.startGame();
 
@@ -1136,16 +1167,19 @@
                                     }
                                 }
                             }
+
+                            if (this.currentRoom) {
+                              this.goToNextTurn();
+                            }
                         })
                         .catch(function (error) {
                             console.error(error);
+
+                            if (this.currentRoom) {
+                              this.goToNextTurn();
+                            }
                         })
                     }
-                },
-                setPlayersIds() {
-                  this.players.forEach(p => {
-                    p.id = this.getUUID();
-                  });
                 },
                 getUUID() {
                   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -1259,6 +1293,27 @@
                   let rooms = this.rooms;
                   this.rooms = [];
                   this.rooms = rooms;
+                },
+                startCurrentRoom() {
+                  this.currentRoom.players[0].isRoomMaster = true;
+
+                  while (this.currentRoom.players.length < 4) {
+                    this.currentRoom.players.push({
+                      id: this.getUUID(),
+                      com: true
+                    })
+                  }
+
+                  this.currentRoom.players.forEach(p => {
+                    p.cardsInHand = [];
+                    p.currentCard = null;
+                    p.isPlaying = true;
+                    p.currentTurnPoints = 0;
+                    p.isRoomMaster = false;
+                    p.points = 20;
+                  });
+
+                  this.goToPage('game');
                 }
             },
             computed: {
@@ -1269,6 +1324,9 @@
                 },
                 sleepInterval() {
                   return 1000 - this.gameSpeed;
+                },
+                isMultiplayerGameAndIAmTheRoomMaster() {
+                  return this.currentRoom && this.currentRoom.players.find(p => p.isRoomMaster).id === this.playerId;
                 }
             }
         });
