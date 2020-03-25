@@ -79,7 +79,8 @@
                     </span>
                   </div>
                   <div class="col">
-                    <button type="button" class="btn btn-primary" @click="enterRoom(room)">Entrar</button>
+                    <button type="button" class="btn btn-primary" @click="enterRoom(room)"
+                        :disabled="!room.players || room.players.length >= 4">Entrar</button>
                   </div>
                 </div>
               </div>
@@ -121,7 +122,8 @@
                     </div>
                   </div>
                 </div>
-                <div class="card-footer">
+                <div v-if="currentRoom.players && currentRoom.players.length && currentRoom.players[0].id === playerId" 
+                    class="card-footer">
                   <div class="row justify-content-end">
                     <div class="col-auto">
                       <button type="button" class="btn btn-primary" @click="goToPage('game')">Iniciar partida</button>
@@ -1000,12 +1002,17 @@
                             break;
                         }
                         case 'lobby': {
+                            if (this.socket) {
+                                this.sendEvent({
+                                    channel: 'roomRemoved',
+                                    message: this.currentRoom
+                                });
+                            }
+
+                          this.rooms = [];
                           this.currentRoom = null;
                           this.getSocket();
-                          break;
-                        }
-                        case 'menu': {
-                          this.currentRoom = null;
+
                           break;
                         }
                     }
@@ -1019,9 +1026,23 @@
                     com: false
                   });
                   this.goToPage('room');
+                  this.sendEvent({
+                    channel: 'newRoom',
+                    message: this.currentRoom
+                  });
                 },
                 enterRoom(room) {
-                  
+                  this.currentRoom = room;
+                  this.currentRoom.players.push({
+                    id: this.playerId,
+                    name: this.nickname,
+                    com: false
+                  });
+                  this.goToPage('room');
+                  this.sendEvent({
+                    channel: 'newRoom',
+                    message: this.currentRoom
+                  });
                 },
                 getRooms() {
                   this.sendEvent({
@@ -1098,13 +1119,7 @@
                         if (data.request && data.response) {
                             switch (data.request) {
                                 case 'getRooms': {
-                                    let index = this.rooms.findIndex(r => r.id === data.response.id);
-                                    if (index > -1) {
-                                        this.rooms[index] = data.response;
-                                    } else {
-                                        this.rooms.push(data.response);
-                                    }
-
+                                    this.addNewRoom(data.response);
                                     break;
                                 }
                             }
@@ -1116,14 +1131,47 @@
 
                     this.socket.on('getRooms', data => {
                       try {
-                        if (data.id && this.currentRoom) {
+                        if (data.id && this.currentRoom && this.currentRoom.players
+                            && this.currentRoom.players.length 
+                            && this.currentRoom.players[0].id === this.playerId) {
                             this.sendEvent({
                                 channel: data.id,
                                 message: {
-                                request: 'getRooms',
-                                response: this.currentRoom
+                                    request: 'getRooms',
+                                    response: this.currentRoom
                                 }
                             });
+                        }
+                      } catch (e) {
+                        console.error(e);
+                      }
+                    });
+                    
+                    this.socket.on('newRoom', data => {
+                      try {
+                        if (data) {
+                            if (this.currentPage === 'lobby') {
+                                this.addNewRoom(data);
+                            } else if (this.currentPage === 'room' && data.id === this.currentRoom.id) {
+                                this.currentRoom = data;
+                            }
+                        }
+                      } catch (e) {
+                        console.error(e);
+                      }
+                    });
+
+                    this.socket.on('roomRemoved', data => {
+                      try {
+                        if (data && data.id) {
+                            if (this.currentPage === 'lobby') {
+                                let index = this.rooms.findIndex(r => r.id === data.id);
+                                if (index > -1) {
+                                    this.rooms.splice(index, 1);
+                                }
+                            } else if (this.currentPage === 'room' && data.id === this.currentRoom.id) {
+                                this.goBack();
+                            }
                         }
                       } catch (e) {
                         console.error(e);
@@ -1135,6 +1183,14 @@
                 },
                 sendEvent(data) {
                   this.socket.emit('emit-event', JSON.stringify(data));
+                },
+                addNewRoom(room) {
+                    let index = this.rooms.findIndex(r => r.id === room.id);
+                    if (index > -1) {
+                        this.rooms[index] = room;
+                    } else {
+                        this.rooms.push(room);
+                    }
                 }
             },
             computed: {
