@@ -563,7 +563,7 @@
                                 }
                               });
 
-                              this.applyTempPlayersCards(tempPlayers);
+                              this.applyFirstDrawTempPlayersCards(tempPlayers);
                             } else {
                               this.sleep().then(() => {
                                 this.playSound();
@@ -591,7 +591,7 @@
                             break;
                         }
                         case 1: {
-                            if (this.currentTrumpSuitChoicePlayerIndex !== 0) {
+                            if (this.players[this.currentTrumpSuitChoicePlayerIndex].com) {
                                 let highestSuitInHand = this.players[this.currentTrumpSuitChoicePlayerIndex].cardsInHand[
                                     this.getBestCardInHandIndex(this.currentTrumpSuitChoicePlayerIndex)
                                 ].suit;
@@ -602,37 +602,57 @@
                             break;
                         }
                         case 2: {
-                            this.sleep().then(() => {
-                              this.playSound();
+                            if (this.isMultiplayerGameAndIAmTheRoomMaster) {
+                              let tempPlayers = JSON.parse(JSON.stringify(this.players));
 
-                              for (let i = 0; i < this.players.length; i++) {
-                                let p = this.players[i];
-                                p.cardsInHand[2] = this.pickNextCard();
-                              }
+                              tempPlayers.forEach(p => {
+                                p.cardsInHand.push(this.pickNextCard());
+                                p.cardsInHand.push(this.pickNextCard());
+                                p.cardsInHand.push(this.pickNextCard());
+                              });
 
-                              this.reloadPlayers();
+                              this.sendEvent({
+                                channel: this.currentRoom.id,
+                                message: {
+                                  action: 'secondDraw',
+                                  data: tempPlayers
+                                }
+                              });
+
+                              this.applySecondDrawTempPlayersCards(tempPlayers);
+                            } else {
                               this.sleep().then(() => {
                                 this.playSound();
 
                                 for (let i = 0; i < this.players.length; i++) {
                                   let p = this.players[i];
-                                  p.cardsInHand[3] = this.pickNextCard();
+                                  p.cardsInHand[2] = this.pickNextCard();
                                 }
-                                
+
                                 this.reloadPlayers();
                                 this.sleep().then(() => {
                                   this.playSound();
 
                                   for (let i = 0; i < this.players.length; i++) {
                                     let p = this.players[i];
-                                    p.cardsInHand[4] = this.pickNextCard();
+                                    p.cardsInHand[3] = this.pickNextCard();
                                   }
-
+                                  
                                   this.reloadPlayers();
-                                  this.goToNextPhase();
+                                  this.sleep().then(() => {
+                                    this.playSound();
+
+                                    for (let i = 0; i < this.players.length; i++) {
+                                      let p = this.players[i];
+                                      p.cardsInHand[4] = this.pickNextCard();
+                                    }
+
+                                    this.reloadPlayers();
+                                    this.goToNextPhase();
+                                  });
                                 });
                               });
-                            });
+                            }
 
                             break;
                         }
@@ -686,7 +706,7 @@
                         }
                     }
                 },
-                applyTempPlayersCards(tempPlayers) {
+                applyFirstDrawTempPlayersCards(tempPlayers) {
                   this.sleep().then(() => {
                     this.playSound();
 
@@ -706,8 +726,45 @@
                           p.cardsInHand[1] = tp.cardsInHand[1];
                         }
                         
-                        this.reloadPlayers();
-                        //this.goToNextPhase();
+                        this.reloadPlayers();                        
+                        this.goToNextPhase();
+                    });
+                  });
+                },
+                applySecondDrawTempPlayersCards(tempPlayers) {
+                  this.sleep().then(() => {
+                    this.playSound();
+
+                    for (let i = 0; i < tempPlayers.length; i++) {
+                      let tp = tempPlayers[i];
+                      let p = this.players[i];
+                      p.cardsInHand[2] = tp.cardsInHand[2];
+                    }
+
+                    this.reloadPlayers();
+                    this.sleep().then(() => {
+                      this.playSound();
+
+                      for (let i = 0; i < tempPlayers.length; i++) {
+                        let tp = tempPlayers[i];
+                        let p = this.players[i];
+                        p.cardsInHand[3] = tp.cardsInHand[3];
+                      }
+                      
+                      this.reloadPlayers();                        
+                      this.sleep().then(() => {
+                        this.playSound();
+
+                        for (let i = 0; i < tempPlayers.length; i++) {
+                          let tp = tempPlayers[i];
+                          let p = this.players[i];
+                          p.cardsInHand[4] = tp.cardsInHand[4];
+                        }
+                        
+                        this.updateCardPowers();
+                        this.reloadPlayers();                        
+                        this.goToNextPhase();
+                      });
                     });
                   });
                 },
@@ -721,7 +778,9 @@
                             this.currentPhaseIndex = 0;
                         }
 
-                        this.handleCurrentPhase();
+                        if (this.isMultiplayerGameAndIAmTheRoomMaster) {
+                          this.handleCurrentPhase();
+                        }
                     });
                 },
                 selectTrumpSuit(index) {
@@ -732,6 +791,20 @@
                             Object.keys(this.suits)[index]
                         ) + ' foi selecionado como nipe trunfo'
                     );
+
+                    if (this.currentRoom && (
+                      this.players[this.currentTrumpSuitChoicePlayerIndex].id === this.playerId
+                      || (this.isMultiplayerGameAndIAmTheRoomMaster && this.players[this.currentTrumpSuitChoicePlayerIndex].com)
+                    )) {
+                      this.sendEvent({
+                        channel: this.currentRoom.id,
+                        message: {
+                          action: 'selectTrumpSuit',
+                          data: this.trumpSuitIndex
+                        }
+                      });
+                    }
+
                     this.goToNextPhase();
                 },
                 cardClicked(index) {
@@ -1296,6 +1369,7 @@
                                 this.currentRoom = data;
 
                                 if (this.currentRoom.inGame) {
+                                  this.showToast(this.currentRoom.players[0].name + " iniciou a partida");
                                   this.goToPage('game');
                                 }
                             }
@@ -1360,22 +1434,39 @@
                 },
                 handleCurrentRoomEvent(data) {
                   try {
-                    if (data && data.action) {
+                    if (this.currentRoom && data && data.action) {
                       switch (data.action) {
                         case 'firstDraw': {
                           if (!this.isMultiplayerGameAndIAmTheRoomMaster) {
                             let ctscpi = data.data.players[data.data.currentTrumpSuitChoicePlayerIndex].id;
                             let tempPlayers = this.convertRemotePlayers(data.data.players);
+
                             this.currentTrumpSuitChoicePlayerIndex = tempPlayers.findIndex(p => p.id === ctscpi);
+                            this.showToast(tempPlayers[this.currentTrumpSuitChoicePlayerIndex].name + ' irá escolher o nipe trunfo');
                             this.currentPlayerIndex = this.currentTrumpSuitChoicePlayerIndex;
+
                             let players = JSON.parse(JSON.stringify(tempPlayers));
                             players.forEach(p => {
                               p.cardsInHand = [];
                             });
                             this.players = players;
 
-                            this.applyTempPlayersCards(tempPlayers);
+                            this.applyFirstDrawTempPlayersCards(tempPlayers);
                             this.gameStarted = true;
+                          }
+
+                          break;
+                        }
+                        case 'selectTrumpSuit': {
+                          if (this.players[this.currentTrumpSuitChoicePlayerIndex].id !== this.playerId) {
+                            this.selectTrumpSuit(data.data);
+                          }
+
+                          break;
+                        }
+                        case 'secondDraw': {
+                          if (!this.isMultiplayerGameAndIAmTheRoomMaster) {
+                            this.applySecondDrawTempPlayersCards(this.convertRemotePlayers(data.data));
                           }
 
                           break;
@@ -1392,16 +1483,16 @@
                   while (index !== 0) {
                     let newPlayers = [];
 
-                    newPlayers[1] = remotePlayers[0];
-                    newPlayers[2] = remotePlayers[1];
-                    newPlayers[3] = remotePlayers[2];
-                    newPlayers[0] = remotePlayers[3];
+                    newPlayers[0] = remotePlayers[1];
+                    newPlayers[1] = remotePlayers[2];
+                    newPlayers[2] = remotePlayers[3];
+                    newPlayers[3] = remotePlayers[0];
 
                     remotePlayers = newPlayers;
-                    index++;
+                    index--;
 
-                    if (index > 3) {
-                      index = 0;
+                    if (index < 0) {
+                      index = 3;
                     }
                   }
 
