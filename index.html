@@ -548,8 +548,8 @@
                               let tempPlayers = JSON.parse(JSON.stringify(this.players));
 
                               tempPlayers.forEach(p => {
-                                p.cardsInHand.push(this.pickNextCard(true));
-                                p.cardsInHand.push(this.pickNextCard(true));
+                                p.cardsInHand.push(this.pickNextCard());
+                                p.cardsInHand.push(this.pickNextCard());
                               });
 
                               this.sendEvent({
@@ -565,21 +565,27 @@
 
                               this.applyTempPlayersCards(tempPlayers);
                             } else {
-                              for (let i = 0; i < this.players.length; i++) {
-                                let p = this.players[i];
+                              this.sleep().then(() => {
+                                this.playSound();
 
+                                for (let i = 0; i < this.players.length; i++) {
+                                  let p = this.players[i];
+                                  p.cardsInHand[0] = this.pickNextCard();
+                                }
+
+                                this.reloadPlayers();
                                 this.sleep().then(() => {
-                                    p.cardsInHand.push(this.pickNextCard());                                   
+                                  this.playSound();
 
-                                    this.sleep().then(() => {
-                                        p.cardsInHand.push(this.pickNextCard());
-
-                                        if (i >= this.players.length - 1) {
-                                            this.goToNextPhase();
-                                        }
-                                    });
+                                  for (let i = 0; i < this.players.length; i++) {
+                                    let p = this.players[i];
+                                    p.cardsInHand[1] = this.pickNextCard();
+                                  }
+                                  
+                                  this.reloadPlayers();
+                                  this.goToNextPhase();
                                 });
-                              }
+                              });
                             }
                             
                             break;
@@ -596,25 +602,38 @@
                             break;
                         }
                         case 2: {
-                            for (let i = 0; i < this.players.length; i++) {
+                            this.sleep().then(() => {
+                              this.playSound();
+
+                              for (let i = 0; i < this.players.length; i++) {
                                 let p = this.players[i];
+                                p.cardsInHand[2] = this.pickNextCard();
+                              }
 
+                              this.reloadPlayers();
+                              this.sleep().then(() => {
+                                this.playSound();
+
+                                for (let i = 0; i < this.players.length; i++) {
+                                  let p = this.players[i];
+                                  p.cardsInHand[3] = this.pickNextCard();
+                                }
+                                
+                                this.reloadPlayers();
                                 this.sleep().then(() => {
-                                    p.cardsInHand.push(this.pickNextCard());
+                                  this.playSound();
 
-                                    this.sleep().then(() => {
-                                        p.cardsInHand.push(this.pickNextCard());
+                                  for (let i = 0; i < this.players.length; i++) {
+                                    let p = this.players[i];
+                                    p.cardsInHand[4] = this.pickNextCard();
+                                  }
 
-                                        this.sleep().then(() => {
-                                            p.cardsInHand.push(this.pickNextCard());
-
-                                            if (i >= this.players.length - 1) {
-                                                this.goToNextPhase();
-                                            }
-                                        });
-                                    });
+                                  this.reloadPlayers();
+                                  this.goToNextPhase();
                                 });
-                            }
+                              });
+                            });
+
                             break;
                         }
                         case 3: {
@@ -692,11 +711,7 @@
                     });
                   });
                 },
-                pickNextCard(ignoreSound) {
-                  if (!ignoreSound) {
-                    this.playSound();
-                  }
-                  
+                pickNextCard() {
                   return this.cardsInDeck.pop();
                 },
                 goToNextPhase() {
