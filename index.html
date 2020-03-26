@@ -435,7 +435,8 @@
                 playerId: null,
                 connected: false,
                 socketIOServerURL: 'https://server-20ab.herokuapp.com',
-                roomsSearched: false
+                roomsSearched: false,
+                isMultiplayerGameAndIAmTheRoomMaster: false
             },
             mounted() {
                 this.window = window;
@@ -466,11 +467,21 @@
                 },
                 startGame() {
                   this.winner = null;
-                  this.gameStarted = true;
-                  this.currentTrumpSuitChoicePlayerIndex = this.getRandomArbitrary(0, 3);
 
                   if (this.currentRoom) {
+                    this.socket.on(this.currentRoom.id, data => {
+                      this.handleCurrentRoomEvent(data);
+                    });
+
+                    if (this.currentRoom && this.currentRoom.players && this.currentRoom.players.length) {
+                      let player = this.currentRoom.players.find(p => p.isRoomMaster);
+
+                      this.isMultiplayerGameAndIAmTheRoomMaster = player && player.id === this.playerId;
+                    }
+
                     if (this.isMultiplayerGameAndIAmTheRoomMaster) {
+                      this.gameStarted = true;
+                      this.currentTrumpSuitChoicePlayerIndex = this.getRandomArbitrary(0, 3);
                       this.currentRoom.inGame = true;
                       this.sendEvent({
                         channel: 'roomUpdate',
@@ -479,8 +490,12 @@
 
                       this.players = this.currentRoom.players;
                       this.setComPlayersRandomNames();
+                    } else {
+                      this.goToNextTurn();
                     }
                   } else {
+                    this.gameStarted = true;
+                    this.currentTrumpSuitChoicePlayerIndex = this.getRandomArbitrary(0, 3);
                     this.players.forEach(p => {
                         p.points = 20;
                     });
@@ -490,12 +505,15 @@
                 },
                 goToNextTurn() {
                     this.playSound();
-                    this.currentTrumpSuitChoicePlayerIndex++;
-                    if (this.currentTrumpSuitChoicePlayerIndex > 3) {
-                        this.currentTrumpSuitChoicePlayerIndex = 0;
+
+                    if (!this.currentRoom || this.isMultiplayerGameAndIAmTheRoomMaster) {
+                      this.currentTrumpSuitChoicePlayerIndex++;
+                      if (this.currentTrumpSuitChoicePlayerIndex > 3) {
+                          this.currentTrumpSuitChoicePlayerIndex = 0;
+                      }
+                      this.currentPlayerIndex = this.currentTrumpSuitChoicePlayerIndex;
+                      this.showToast(this.players[this.currentTrumpSuitChoicePlayerIndex].name + ' irá escolher o nipe trunfo');
                     }
-                    this.currentPlayerIndex = this.currentTrumpSuitChoicePlayerIndex;
-                    this.showToast(this.players[this.currentTrumpSuitChoicePlayerIndex].name + ' irá escolher o nipe trunfo');
 
                     this.turn++;
                     this.lastWinner = null;
@@ -505,17 +523,20 @@
                     this.currentPhaseIndex = 0;
                     this.currentTrick = 0;
                     this.trumpSuitIndex = null;
-                    this.shuffleDeck();
-                    this.players.forEach(p => {
-                        p.cardsInHand = [];
-                        p.currentCard = null;
-                        p.isPlaying = true;
-                        p.currentTurnPoints = 0;
-                    });
 
-                    this.sleep().then(() => {
-                      this.handleCurrentPhase();
-                    });
+                    if (!this.currentRoom || this.isMultiplayerGameAndIAmTheRoomMaster) {
+                      this.shuffleDeck();
+                      this.players.forEach(p => {
+                          p.cardsInHand = [];
+                          p.currentCard = null;
+                          p.isPlaying = true;
+                          p.currentTurnPoints = 0;
+                      });
+
+                      this.sleep().then(() => {
+                        this.handleCurrentPhase();
+                      });
+                    }
                 },
                 shuffleDeck() {
                     this.cardsInDeck = this.shuffle(JSON.parse(JSON.stringify(this.cards)));
@@ -535,28 +556,14 @@
                                 channel: this.currentRoom.id,
                                 message: {
                                   action: 'firstDraw',
-                                  data: tempPlayers
+                                  data: {
+                                    currentTrumpSuitChoicePlayerIndex: this.currentTrumpSuitChoicePlayerIndex,
+                                    players: tempPlayers
+                                  }
                                 }
                               });
 
-                              for (let i = 0; i < tempPlayers.length; i++) {
-                                let tp = tempPlayers[i];
-                                let p = this.players[i];
-
-                                this.sleep().then(() => {
-                                    this.playSound();
-                                    p.cardsInHand[0] = tp.cardsInHand[0];                                  
-
-                                    this.sleep().then(() => {
-                                        this.playSound();
-                                        p.cardsInHand[1] = tp.cardsInHand[1]; 
-
-                                        if (i >= this.players.length - 1) {
-                                            //this.goToNextPhase();
-                                        }
-                                    });
-                                });
-                              }
+                              this.applyTempPlayersCards(tempPlayers);
                             } else {
                               for (let i = 0; i < this.players.length; i++) {
                                 let p = this.players[i];
@@ -659,6 +666,31 @@
                             break;
                         }
                     }
+                },
+                applyTempPlayersCards(tempPlayers) {
+                  this.sleep().then(() => {
+                    this.playSound();
+
+                    for (let i = 0; i < tempPlayers.length; i++) {
+                      let tp = tempPlayers[i];
+                      let p = this.players[i];
+                      p.cardsInHand[0] = tp.cardsInHand[0];
+                    }
+
+                    this.reloadPlayers();
+                    this.sleep().then(() => {
+                        this.playSound();
+
+                        for (let i = 0; i < tempPlayers.length; i++) {
+                          let tp = tempPlayers[i];
+                          let p = this.players[i];
+                          p.cardsInHand[1] = tp.cardsInHand[1];
+                        }
+                        
+                        this.reloadPlayers();
+                        //this.goToNextPhase();
+                    });
+                  });
                 },
                 pickNextCard(ignoreSound) {
                   if (!ignoreSound) {
@@ -1091,6 +1123,7 @@
                             break;
                         }
                         case 'lobby': {
+                          this.isMultiplayerGameAndIAmTheRoomMaster = false;
                           this.rooms = [];
                           this.currentRoom = null;
                           this.getSocket();
@@ -1295,8 +1328,6 @@
                   this.rooms = rooms;
                 },
                 startCurrentRoom() {
-                  this.currentRoom.players[0].isRoomMaster = true;
-
                   while (this.currentRoom.players.length < 4) {
                     this.currentRoom.players.push({
                       id: this.getUUID(),
@@ -1305,15 +1336,66 @@
                   }
 
                   this.currentRoom.players.forEach(p => {
-                    p.cardsInHand = [];
-                    p.currentCard = null;
-                    p.isPlaying = true;
-                    p.currentTurnPoints = 0;
                     p.isRoomMaster = false;
                     p.points = 20;
                   });
 
+                  this.currentRoom.players[0].isRoomMaster = true;
                   this.goToPage('game');
+                },
+                handleCurrentRoomEvent(data) {
+                  try {
+                    if (data && data.action) {
+                      switch (data.action) {
+                        case 'firstDraw': {
+                          if (!this.isMultiplayerGameAndIAmTheRoomMaster) {
+                            let ctscpi = data.data.players[data.data.currentTrumpSuitChoicePlayerIndex].id;
+                            let tempPlayers = this.convertRemotePlayers(data.data.players);
+                            this.currentTrumpSuitChoicePlayerIndex = tempPlayers.findIndex(p => p.id === ctscpi);
+                            this.currentPlayerIndex = this.currentTrumpSuitChoicePlayerIndex;
+                            let players = JSON.parse(JSON.stringify(tempPlayers));
+                            players.forEach(p => {
+                              p.cardsInHand = [];
+                            });
+                            this.players = players;
+
+                            this.applyTempPlayersCards(tempPlayers);
+                            this.gameStarted = true;
+                          }
+
+                          break;
+                        }
+                      }
+                    }
+                  } catch (e) {
+                    console.log(e);
+                  }
+                },
+                convertRemotePlayers(remotePlayers) {
+                  let index = remotePlayers.findIndex(p => p.id === this.playerId);
+
+                  while (index !== 0) {
+                    let newPlayers = [];
+
+                    newPlayers[1] = remotePlayers[0];
+                    newPlayers[2] = remotePlayers[1];
+                    newPlayers[3] = remotePlayers[2];
+                    newPlayers[0] = remotePlayers[3];
+
+                    remotePlayers = newPlayers;
+                    index++;
+
+                    if (index > 3) {
+                      index = 0;
+                    }
+                  }
+
+                  return remotePlayers;
+                },
+                reloadPlayers() {
+                  let players = this.players;
+                  this.players = [];
+                  this.players = players;
                 }
             },
             computed: {
@@ -1324,9 +1406,6 @@
                 },
                 sleepInterval() {
                   return 1000 - this.gameSpeed;
-                },
-                isMultiplayerGameAndIAmTheRoomMaster() {
-                  return this.currentRoom && this.currentRoom.players.find(p => p.isRoomMaster).id === this.playerId;
                 }
             }
         });
