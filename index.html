@@ -171,7 +171,7 @@
             </div>
 
             <div v-if="players[3].isPlaying">
-                <img v-for="(card, index) in players[3].cardsInHand" v-bind:key="'playeer3cards-' + index" 
+                <img v-for="(card, index) in players[3].cardsInHand" v-bind:key="'player3cards-' + index" 
                     src="assets/img/cards/back-hor.jpg" class="player3-card" :width="cardSize.height"
                     :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[3].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
             </div>
@@ -209,7 +209,7 @@
                         <img src="assets/img/arrow.png">
                     </div>
                     <div v-if="players[0].isPlaying" class="row justify-content-center">
-                        <div v-for="(card, index) in players[0].cardsInHand" v-bind:key="'player1cards-' +  index"
+                        <div v-for="(card, index) in players[0].cardsInHand" v-bind:key="'player0cards-' + index"
                             :class="{'selected-card': card.selected}">
                             <img :height="cardSize.height"
                                 :src="'assets/img/cards/' + card.name + '.png'" class="card-padding-x"
@@ -220,7 +220,7 @@
             </div>
 
             <div v-if="players[1].isPlaying">
-                <img v-for="(card, index) in players[1].cardsInHand" v-bind:key="'player0cards-' +  index" 
+                <img v-for="(card, index) in players[1].cardsInHand" v-bind:key="'player1cards-' + index" 
                     src="assets/img/cards/back-hor.jpg" class="player1-card" :width="cardSize.height"
                     :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[1].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
             </div>
@@ -328,7 +328,8 @@
                         currentCard: null,
                         isPlaying: true,
                         currentTurnPoints: 0,
-                        isRoomMaster: false
+                        isRoomMaster: false,
+                        exchangeCardsSelected: false
                     },
                     {
                         id: 1,
@@ -339,7 +340,8 @@
                         currentCard: null,
                         isPlaying: true,
                         currentTurnPoints: 0,
-                        isRoomMaster: false
+                        isRoomMaster: false,
+                        exchangeCardsSelected: false
                     },
                     {
                         id: 2,
@@ -350,7 +352,8 @@
                         currentCard: null,
                         isPlaying: true,
                         currentTurnPoints: 0,
-                        isRoomMaster: false
+                        isRoomMaster: false,
+                        exchangeCardsSelected: false
                     },
                     {
                         id: 3,
@@ -361,7 +364,8 @@
                         currentCard: null,
                         isPlaying: true,
                         currentTurnPoints: 0,
-                        isRoomMaster: false
+                        isRoomMaster: false,
+                        exchangeCardsSelected: false
                     },
                 ],
                 currentTrick: 0,
@@ -531,6 +535,7 @@
                           p.currentCard = null;
                           p.isPlaying = true;
                           p.currentTurnPoints = 0;
+                          p.exchangeCardsSelected = false;
                       });
 
                       this.sleep().then(() => {
@@ -674,6 +679,8 @@
                                             break;
                                         }
                                     }
+
+                                    this.players[i].exchangeCardsSelected = true;
                                 }
                             }
 
@@ -809,11 +816,12 @@
                 },
                 cardClicked(index) {
                     if (this.isCardClickable) {
-                        if (this.currentPhaseIndex === 3) {
+                        if (this.currentPhaseIndex === 3) { 
                             if (this.players[0].cardsInHand[index].selected 
                                 || this.players[0].cardsInHand.filter(c => c.selected).length < 3) {
+                                this.playSound();
                                 this.players[0].cardsInHand[index].selected = !this.players[0].cardsInHand[index].selected;
-                                this.reloadCardsInHand(0);
+                                this.reloadPlayers();
                             }
                         } else {
                             this.playCard(index);
@@ -823,44 +831,138 @@
                 exchangePlayerCards() {
                     this.playSound();
                     this.exchangeCardsButtonPressed = true;
-                    let exchangedPlayers = [];
+                    this.players[0].exchangeCardsSelected = true;   
 
+                    if (this.currentRoom && !this.isMultiplayerGameAndIAmTheRoomMaster) {
+                      this.sendEvent({
+                        channel: this.currentRoom.id,
+                        message: {
+                          action: 'exchangeCardsSelected',
+                          data: {
+                            playerId: this.playerId,
+                            cardsInHand: this.players[0].cardsInHand
+                          }
+                        }
+                      });
+                    }
+
+                    this.verifyIfAllPlayersSelectedTheirExchangeCards();
+                },
+                verifyIfAllPlayersSelectedTheirExchangeCards() {
+                  if (!this.currentRoom) {
+                    this.applySelectedExchangeCards();
+                  } else if (this.isMultiplayerGameAndIAmTheRoomMaster && this.players.findIndex(p => !p.exchangeCardsSelected) === -1) {                 
                     for (let i = 0; i < this.players.length; i++) {
-                        let selectedCards = this.players[i].cardsInHand.filter(c => c.selected);
+                      let selectedCards = this.players[i].cardsInHand.filter(c => c.selected);
 
-                        if (selectedCards.length) {
-                            this.showToast(this.players[i].name + ' decidiu trocar ' + selectedCards.length + ' cartas');
+                      if (selectedCards.length) {
+                          selectedCards.forEach(sc => {
+                              this.players[i].cardsInHand.splice(
+                                  this.players[i].cardsInHand.findIndex(c => c.name === sc.name)
+                              , 1);
+                          });
 
-                            selectedCards.forEach(sc => {
-                                this.players[i].cardsInHand.splice(
-                                    this.players[i].cardsInHand.findIndex(c => c.name === sc.name)
-                                , 1);
-                            });
+                          for (let j = 0; j < selectedCards.length; j++) {
+                            let card = this.pickNextCard();
+                            card.exchanged = true;
+                            this.players[i].cardsInHand.push(card);
+                          }
+                      }
+                    }
 
-                            this.sleep().then(() => {
-                                for (let j = 0; j < selectedCards.length; j++) {
-                                    this.sleep(j + 1).then(() => {
-                                        this.players[i].cardsInHand.push(this.pickNextCard());
+                    this.sendEvent({
+                      channel: this.currentRoom.id,
+                      message: {
+                        action: 'exchangedCards',
+                        data: this.players
+                      }
+                    });
 
-                                        if (j >= selectedCards.length - 1) {
-                                            exchangedPlayers.push(i);
-                                        }
-                                        
-                                        if (exchangedPlayers.length >= 4) {
-                                            this.goToNextPhase();
-                                        }
-                                    });
-                                }
-                            });
-                        } else {
-                            this.showToast(this.players[i].name + ' decidiu não trocar nenhuma carta');
-                            exchangedPlayers.push(i);
+                    this.applyMultiplayerSelectedExchangeCards(JSON.parse(JSON.stringify(this.players)));
+                  }
+                },
+                applySelectedExchangeCards() {
+                  let exchangedPlayers = [];
 
-                            if (exchangedPlayers.length >= 4) {
-                                this.goToNextPhase();
+                  for (let i = 0; i < this.players.length; i++) {
+                      let selectedCards = this.players[i].cardsInHand.filter(c => c.selected);
+
+                      if (selectedCards.length) {
+                          this.showToast(this.players[i].name + ' decidiu trocar ' + selectedCards.length + ' cartas');
+
+                          selectedCards.forEach(sc => {
+                              this.players[i].cardsInHand.splice(
+                                  this.players[i].cardsInHand.findIndex(c => c.name === sc.name)
+                              , 1);
+                          });
+
+                          this.sleep().then(() => {
+                              for (let j = 0; j < selectedCards.length; j++) {
+                                  this.sleep(j + 1).then(() => {
+                                      this.players[i].cardsInHand.push(this.pickNextCard());
+
+                                      if (j >= selectedCards.length - 1) {
+                                          exchangedPlayers.push(i);
+                                      }
+                                      
+                                      if (exchangedPlayers.length >= 4) {
+                                          this.goToNextPhase();
+                                      }
+                                  });
+                              }
+                          });
+                      } else {
+                          this.showToast(this.players[i].name + ' decidiu não trocar nenhuma carta');
+                          exchangedPlayers.push(i);
+
+                          if (exchangedPlayers.length >= 4) {
+                              this.goToNextPhase();
+                          }
+                      }
+                  }
+                },
+                applyMultiplayerSelectedExchangeCards(tempPlayers) {
+                  let exchangedPlayers = [];
+
+                  for (let i = 0; i < tempPlayers.length; i++) {
+                    let notExchangedCards = tempPlayers[i].cardsInHand.filter(c => !c.exchanged);
+
+                    if (notExchangedCards.length < 5) {
+                        this.showToast(this.players[i].name + ' decidiu trocar ' + (5 - notExchangedCards.length) + ' cartas');
+                        this.players[i].cardsInHand = notExchangedCards;
+                        this.reloadPlayers();
+
+                        this.playSound();
+                        this.sleep().then(() => {
+                            let exchangedCards = tempPlayers[i].cardsInHand.filter(c => c.exchanged);
+
+                            for (let j = 0; j < exchangedCards.length; j++) {
+                                this.sleep(j + 1).then(() => {
+                                    this.playSound();
+                                    let card = exchangedCards[j];
+                                    card.exchanged = false;
+                                    this.players[i].cardsInHand.push(card);
+                                    this.reloadPlayers();
+
+                                    if (j >= exchangedCards.length - 1) {
+                                        exchangedPlayers.push(i);
+                                    }
+                                    
+                                    if (exchangedPlayers.length >= 4) {
+                                        this.goToNextPhase();
+                                    }
+                                });
                             }
+                        });
+                    } else {
+                        this.showToast(this.players[i].name + ' decidiu não trocar nenhuma carta');
+                        exchangedPlayers.push(i);
+
+                        if (exchangedPlayers.length >= 4) {
+                            this.goToNextPhase();
                         }
                     }
+                  }
                 },
                 updateCardPowers() {
                     let trumpSuit = Object.values(this.suits)[this.trumpSuitIndex];
@@ -1059,11 +1161,6 @@
                     } else {
                         this.goToNextTurn();
                     }
-                },
-                reloadCardsInHand(index) {
-                    let cardsInHand = this.players[index].cardsInHand;
-                    this.players[index].cardsInHand = [];
-                    this.players[index].cardsInHand = cardsInHand;
                 },
                 reloadCurrentPlayerCurrentCard() {
                     let currentCard = this.players[this.currentPlayerIndex].currentCard;
@@ -1276,30 +1373,34 @@
                     });
 
                     if (numberOfComPlayers) {
-                        axios.get('https://uinames.com/api/?amount=' + numberOfComPlayers + '&region=germany')
-                        .then(response => {
-                            if (response && response.data && response.data.length) {
+                      axios.get('https://randomuser.me/api/?results=' + numberOfComPlayers + '&nat=DE&inc=name')
+                      .then(response => {
+                          try {
+                            if (response && response.data && response.data.results && response.data.results.length >= numberOfComPlayers) {
                                 let j = 0;
 
                                 for (let i = 0; i < this.players.length; i++) {
                                     if (this.players[i].com) {
-                                        this.players[i].name = response.data[j].name;
+                                        this.players[i].name = response.data.results[j].name.first;
                                         j++;
                                     }
                                 }
                             }
+                          } catch (e) {
+                            console.error(e);
+                          }
 
-                            if (this.currentRoom) {
-                              this.goToNextTurn();
-                            }
-                        })
-                        .catch(function (error) {
-                            console.error(error);
+                          if (this.currentRoom) {
+                            this.goToNextTurn();
+                          }
+                      })
+                      .catch(error => {
+                          console.error(error);
 
-                            if (this.currentRoom) {
-                              this.goToNextTurn();
-                            }
-                        })
+                          if (this.currentRoom) {
+                            this.goToNextTurn();
+                          }
+                      });
                     }
                 },
                 getUUID() {
@@ -1417,11 +1518,16 @@
                   this.rooms = rooms;
                 },
                 startCurrentRoom() {
+                  let i = 1;
+
                   while (this.currentRoom.players.length < 4) {
                     this.currentRoom.players.push({
                       id: this.getUUID(),
+                      name: 'Jogador ' + i,
                       com: true
-                    })
+                    });
+
+                    i++;
                   }
 
                   this.currentRoom.players.forEach(p => {
@@ -1458,7 +1564,9 @@
                           break;
                         }
                         case 'selectTrumpSuit': {
-                          if (this.players[this.currentTrumpSuitChoicePlayerIndex].id !== this.playerId) {
+                          if (this.players[this.currentTrumpSuitChoicePlayerIndex].id !== this.playerId && (
+                            !this.isMultiplayerGameAndIAmTheRoomMaster || !this.players[this.currentTrumpSuitChoicePlayerIndex].com
+                          )) {
                             this.selectTrumpSuit(data.data);
                           }
 
@@ -1467,6 +1575,23 @@
                         case 'secondDraw': {
                           if (!this.isMultiplayerGameAndIAmTheRoomMaster) {
                             this.applySecondDrawTempPlayersCards(this.convertRemotePlayers(data.data));
+                          }
+
+                          break;
+                        }
+                        case 'exchangeCardsSelected': {
+                          if (this.isMultiplayerGameAndIAmTheRoomMaster && data.data.playerId !== this.playerId) {
+                            let index = this.players.findIndex(p => p.id === data.data.playerId);
+                            this.players[index].cardsInHand = data.data.cardsInHand;
+                            this.players[index].exchangeCardsSelected = true;
+                            this.verifyIfAllPlayersSelectedTheirExchangeCards();
+                          }
+
+                          break;
+                        }
+                        case 'exchangedCards': {
+                          if (!this.isMultiplayerGameAndIAmTheRoomMaster) {
+                            this.applyMultiplayerSelectedExchangeCards(this.convertRemotePlayers(data.data));
                           }
 
                           break;
@@ -1506,8 +1631,10 @@
             },
             computed: {
                 isCardClickable() {
-                  return this.currentPhaseIndex === 3 || (
-                      this.currentPhaseIndex === 5 && this.currentPlayerIndex === 0 && this.players[0].currentCard === null
+                  return (
+                    this.currentPhaseIndex === 3 && !this.players[0].exchangeCardsSelected
+                  ) || (
+                    this.currentPhaseIndex === 5 && this.currentPlayerIndex === 0 && this.players[0].currentCard === null
                   );
                 },
                 sleepInterval() {
