@@ -329,7 +329,8 @@
                         isPlaying: true,
                         currentTurnPoints: 0,
                         isRoomMaster: false,
-                        exchangeCardsSelected: false
+                        exchangeCardsSelected: false,
+                        playOrPassSelected: false
                     },
                     {
                         id: 1,
@@ -341,7 +342,8 @@
                         isPlaying: true,
                         currentTurnPoints: 0,
                         isRoomMaster: false,
-                        exchangeCardsSelected: false
+                        exchangeCardsSelected: false,
+                        playOrPassSelected: false
                     },
                     {
                         id: 2,
@@ -353,7 +355,8 @@
                         isPlaying: true,
                         currentTurnPoints: 0,
                         isRoomMaster: false,
-                        exchangeCardsSelected: false
+                        exchangeCardsSelected: false,
+                        playOrPassSelected: false
                     },
                     {
                         id: 3,
@@ -365,7 +368,8 @@
                         isPlaying: true,
                         currentTurnPoints: 0,
                         isRoomMaster: false,
-                        exchangeCardsSelected: false
+                        exchangeCardsSelected: false,
+                        playOrPassSelected: false
                     },
                 ],
                 currentTrick: 0,
@@ -536,6 +540,7 @@
                           p.isPlaying = true;
                           p.currentTurnPoints = 0;
                           p.exchangeCardsSelected = false;
+                          p.playOrPassSelected = false;
                       });
 
                       this.sleep().then(() => {
@@ -620,7 +625,12 @@
                                 channel: this.currentRoom.id,
                                 message: {
                                   action: 'secondDraw',
-                                  data: tempPlayers
+                                  data: tempPlayers.map(p => {
+                                    return {
+                                      id: p.id,
+                                      cardsInHand: p.cardsInHand
+                                    }
+                                  })
                                 }
                               });
 
@@ -697,6 +707,7 @@
                                     });
 
                                     this.players[i].isPlaying = totalPower > 20;
+                                    this.players[i].playOrPassSelected = true;
                                     this.showToast(this.players[i].name + ' decidiu ' + (this.players[i].isPlaying ? ' jogar' : ' passar'));
 
                                     if (!this.players[i].isPlaying) {
@@ -708,7 +719,8 @@
                             break;
                         }
                         case 5: {
-                            this.goToNextTrick();
+                            //this.goToNextTrick();
+
                             break;
                         }
                     }
@@ -874,7 +886,12 @@
                       channel: this.currentRoom.id,
                       message: {
                         action: 'exchangedCards',
-                        data: this.players
+                        data: this.players.map(p => {
+                          return {
+                            id: p.id,
+                            cardsInHand: p.cardsInHand
+                          }
+                        })
                       }
                     });
 
@@ -964,6 +981,28 @@
                     }
                   }
                 },
+                verifyIfAllPlayersSelectedPlayOrPass() {
+                  if (this.isMultiplayerGameAndIAmTheRoomMaster && this.players.findIndex(p => !p.playOrPassSelected) === -1) {
+                    this.players.forEach(p => {
+                      this.showToast(p.name + ' decidiu ' + (p.isPlaying ? ' jogar' : ' passar'));
+                    });
+
+                    this.sendEvent({
+                      channel: this.currentRoom.id,
+                      message: {
+                        action: 'allPlayersSelectedPlayOrPass',
+                        data: this.players.map(p => {
+                          return {
+                            id: p.id,
+                            isPlaying: p.isPlaying
+                          }
+                        })
+                      }
+                    });
+
+                    this.goToNextPhase();
+                  }
+                },
                 updateCardPowers() {
                     let trumpSuit = Object.values(this.suits)[this.trumpSuitIndex];
 
@@ -1007,8 +1046,29 @@
                     this.playSound();
                     this.playOrPassButtonPressed = true;
                     this.players[0].isPlaying = value;
+                    this.players[0].playOrPassSelected = true;
                     this.showToast(this.players[0].name + ' decidiu ' + (this.players[0].isPlaying ? ' jogar' : ' passar'));
-                    this.goToNextPhase();
+
+                    if (this.currentRoom) {
+                      if (this.isMultiplayerGameAndIAmTheRoomMaster) {
+                        this.verifyIfAllPlayersSelectedPlayOrPass();
+                      } else {
+                        this.sendEvent({
+                          channel: this.currentRoom.id,
+                          message: {
+                            action: 'playOrPassSelected',
+                            data: {
+                              playerId: this.playerId,
+                              isPlaying: this.players[0].isPlaying
+                            }
+                          }
+                        });
+                      }
+                    }
+
+                    if (!this.currentRoom) {
+                      this.goToNextPhase();
+                    }
                 },
                 goToNextTrick() {
                     this.currentTrick++;
@@ -1592,6 +1652,29 @@
                         case 'exchangedCards': {
                           if (!this.isMultiplayerGameAndIAmTheRoomMaster) {
                             this.applyMultiplayerSelectedExchangeCards(this.convertRemotePlayers(data.data));
+                          }
+
+                          break;
+                        }
+                        case 'playOrPassSelected': {
+                          if (this.isMultiplayerGameAndIAmTheRoomMaster) {
+                            let index = this.players.findIndex(p => p.id === data.data.playerId);
+                            this.players[index].playOrPassSelected = true;
+                            this.verifyIfAllPlayersSelectedPlayOrPass();
+                          }
+
+                          break;
+                        }
+                        case 'allPlayersSelectedPlayOrPass': {
+                          if (!this.isMultiplayerGameAndIAmTheRoomMaster) {
+                            let tempPlayers = this.convertRemotePlayers(data.data);
+
+                            for (let i = 0; i < this.players.length; i++) {
+                              this.players[i].isPlaying = tempPlayers[i].isPlaying;
+                              this.showToast(this.players[i].name + ' decidiu ' + (this.players[i].isPlaying ? ' jogar' : ' passar'));
+                            }
+
+                            this.goToNextPhase();
                           }
 
                           break;
