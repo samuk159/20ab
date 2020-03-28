@@ -471,6 +471,16 @@
                 requestFullScreenButtonPressed: false
             },
             mounted() {
+                this.playerId = this.getUUID();
+                this.setCardSize();
+                this.setSound();
+                this.generateCards();
+                
+                let nickname = localStorage.getItem('nickname');
+                if (nickname && nickname.length) {
+                    this.nickname = nickname;
+                }
+                
                 this.reloadPage();
             },
             methods: {
@@ -483,16 +493,6 @@
                     this.showToastError('Por favor mude a orientação da tela para paisagem e clique em recarregar');
                   } else if (this.isMobile && !this.requestFullScreenButtonPressed) {
                     this.showToastError('Por favor clique em Mudar para tela cheia');
-                  } else {
-                    this.playerId = this.getUUID();
-                    this.setCardSize();
-                    this.setSound();
-                    this.generateCards();
-                    
-                    let nickname = localStorage.getItem('nickname');
-                    if (nickname && nickname.length) {
-                        this.nickname = nickname;
-                    }
                   }
                 },
                 generateCards() {
