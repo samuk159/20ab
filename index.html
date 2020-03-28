@@ -22,6 +22,12 @@
                             Recarregar
                         </button>
                     </div>
+                    <div v-else-if="isMobile && !requestFullScreenButtonPressed" class="row justify-content-center">
+                        <button @click="requestFullScreen()" type="button" 
+                            class="btn btn-primary col-auto">
+                            Mudar para tela cheia
+                        </button>
+                    </div>
                     <div v-else>
                       <div class="row justify-content-center">
                           <div class="form-group col-auto">
@@ -460,7 +466,9 @@
                 isPlayingCard: false,
                 chatMessage: null,
                 chatMessageEnabled: true,
-                isScreenPortrait: false
+                isScreenPortrait: false,
+                isMobile: false,
+                requestFullScreenButtonPressed: false
             },
             mounted() {
                 this.reloadPage();
@@ -468,10 +476,13 @@
             methods: {
                 reloadPage() {
                   this.window = window;
+                  this.isMobile = window.innerWidth <= 850;
                   this.isScreenPortrait = window.innerWidth < window.innerHeight;
                   
                   if (this.isScreenPortrait) {
                     this.showToastError('Por favor mude a orientação da tela para paisagem e clique em recarregar');
+                  } else if (this.isMobile && !this.requestFullScreenButtonPressed) {
+                    this.showToastError('Por favor clique em Mudar para tela cheia');
                   } else {
                     this.playerId = this.getUUID();
                     this.setCardSize();
@@ -1890,6 +1901,10 @@
                 },
                 gameSpeedChanged() {
                   localStorage.setItem('gameSpeed', this.gameSpeed.toString());
+                },
+                requestFullScreen() {
+                  this.requestFullScreenButtonPressed = true;
+                  document.documentElement.webkitRequestFullScreen();
                 }
             },
             computed: {
