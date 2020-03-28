@@ -18,7 +18,7 @@
                     <div class="row justify-content-center">
                         <div class="form-group col-auto">
                             <label for="nicknameInput">Apelido</label>
-                            <input type="text" class="form-control" id="nicknameInput" 
+                            <input type="text" class="form-control" id="nicknameInput" maxlength="25"
                             placeholder="Digite um apelido" v-model="nickname">
                         </div>
                     </div>
@@ -89,7 +89,8 @@
               <div class="row justify-content-end">
                 <div class="col-auto">
                   <div class="form-group">
-                    <input v-model="newRoom.name" type="text" class="form-control" id="newRoomName" placeholder="Insira o nome da sala">
+                    <input v-model="newRoom.name" type="text" class="form-control" id="newRoomName" placeholder="Insira o nome da sala"
+                      maxlength="30">
                   </div>
                 </div>
                 <div class="col-auto">
@@ -290,10 +291,14 @@
                     </div>
                 </div>
             </div>
+
+            <div v-if="currentRoom && chatMessageEnabled" class="form-group mb-0" id="chat-message-input">
+              <input type="text" class="form-control" v-model="chatMessage" @keyup.enter="sendChatMessage()" maxlength="100">
+            </div>
         </div>
 
         <button v-if="currentPage !== 'menu'" id="back-button" type="button" class="btn btn-secondary" @click="goBack()">
-            Voltar
+          Voltar
         </button>
     </div>
 
@@ -445,7 +450,9 @@
                 socketIOServerURL: 'https://server-20ab.herokuapp.com',
                 roomsSearched: false,
                 isMultiplayerGameAndIAmTheRoomMaster: false,
-                isPlayingCard: false
+                isPlayingCard: false,
+                chatMessage: null,
+                chatMessageEnabled: true
             },
             mounted() {
                 this.window = window;
@@ -1263,7 +1270,7 @@
                                 this.showToast(this.players[i].name + ' marcou ' + this.players[i].currentTurnPoints + (this.players[i].currentTurnPoints > 1 ? ' pontos' : ' ponto') + ' neste turno');
                                 this.players[i].points -= (this.players[i].currentTurnPoints);
                             } else {
-                                this.showToastError(this.players[i].name + ' não marcou nenhum ponto neste turno');
+                                this.showToastWarning(this.players[i].name + ' não marcou nenhum ponto neste turno');
                                 if (i === this.currentTrumpSuitChoicePlayerIndex) {
                                     this.players[i].points += 10;
                                 } else {
@@ -1302,23 +1309,33 @@
 
                     return array;
                 },
-                showToast(text, bgColor) {
+                showToast(text, additionalOptions) {
                     let options = {
                         text: text,
-                        hideAfter: this.sleepInterval * 10
+                        hideAfter: this.sleepInterval * 15,
+                        stack: 10,
+                        position: {
+                          bottom: 50,
+                          left: 10
+                        }
                     };
 
-                    if (bgColor) {
-                        options.bgColor = bgColor;
+                    if (additionalOptions) {
+                      for (key in additionalOptions) {
+                        options[key] = additionalOptions[key];
+                      }
                     }
 
                     $.toast(options);
                 },
                 showToastSuccess(text) {
-                    this.showToast(text, 'green');
+                    this.showToast(text, { icon: 'success' });
                 },
                 showToastError(text) {
-                    this.showToast(text, 'red');
+                    this.showToast(text, { icon: 'error' });
+                },
+                showToastWarning(text) {
+                    this.showToast(text, { icon: 'warning' });
                 },
                 upperCaseFirstLetter(str) {
                     if (str && str.length > 1) {
@@ -1771,10 +1788,19 @@
 
                           break;
                         }
+                        case 'chatMessage': {
+                          this.showToast(data.data.chatMessage, {
+                            heading: data.data.playerName + ' diz:',
+                            hideAfter: 15000,
+                            icon: 'info'
+                          });
+
+                          break;
+                        }
                       }
                     }
                   } catch (e) {
-                    console.log(e);
+                    console.error(e);
                   }
                 },
                 convertRemotePlayers(remotePlayers) {
@@ -1802,6 +1828,27 @@
                   let players = this.players;
                   this.players = [];
                   this.players = players;
+                },
+                sendChatMessage() {
+                  if (!this.chatMessage || !this.chatMessage.length || this.chatMessage.length > 100) {
+                    return;
+                  }
+
+                  this.chatMessageEnabled = false;
+                  this.sendEvent({
+                    channel: this.currentRoom.id,
+                    message: {
+                      action: 'chatMessage',
+                      data: {
+                        playerName: this.players[0].name,
+                        chatMessage: this.chatMessage
+                      }
+                    }
+                  });
+                  this.chatMessage = null;
+                  setTimeout(() => {
+                    this.chatMessageEnabled = true;
+                  }, 5000);
                 }
             },
             computed: {
