@@ -224,7 +224,7 @@
                     <div v-if="players[0].isPlaying" class="row justify-content-center">
                         <div v-for="(card, index) in players[0].cardsInHand" v-bind:key="'player0cards-' + index"
                             :class="{'selected-card': card.selected}">
-                            <img :height="cardSize.height"
+                            <img :height="playerCardHeight"
                                 :src="'assets/img/cards/' + card.name + '.png'" class="card-padding-x"
                                 @click="cardClicked(index)" :class="{'cursor-pointer': isCardClickable}">
                         </div>
@@ -469,7 +469,8 @@
                 isScreenPortrait: false,
                 isMobile: false,
                 requestFullScreenButtonPressed: false,
-                windowHeight: 768
+                windowHeight: 768,
+                playerCardHeight: 0
             },
             mounted() {
                 this.playerId = this.getUUID();
@@ -1422,6 +1423,12 @@
 
                     this.cardSize.height = (windowHeight / 4) - (50 / 4);
                     this.cardSize.width = (this.cardSize.height * this.cardSize.width) / oldHeight;
+
+                    this.playerCardHeight = this.cardSize.height;
+
+                    if (this.isMobile) {
+                      this.playerCardHeight *= 1.5;
+                    }
                 },
                 goToPage(page) {
                     this.playSound();
