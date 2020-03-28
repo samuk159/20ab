@@ -143,8 +143,8 @@
                 </div>
                 <div class="col-auto">
                     <div class="mt-2 mr-3">
-                        <input type="range" class="form-control-range" v-model="gameSpeed" min="0" max="1000"
-                        data-toggle="tooltip" data-placement="bottom" title="Velocidade do Jogo">  
+                        <input v-if="!currentRoom" type="range" class="form-control-range" v-model="gameSpeed" min="0" max="1000"
+                        data-toggle="tooltip" data-placement="bottom" title="Velocidade do Jogo" @change="gameSpeedChanged()">  
                     </div>
                 </div>
             </div>
@@ -500,6 +500,8 @@
                   }
 
                   if (this.currentRoom) {
+                    this.gameSpeed = 500;
+
                     this.socket.on(this.currentRoom.id, data => {
                       this.handleCurrentRoomEvent(data);
                     });
@@ -535,6 +537,11 @@
                   } else {
                     this.gameStarted = true;
                     this.currentTrumpSuitChoicePlayerIndex = this.getRandomArbitrary(0, 3);
+
+                    let gameSpeed = localStorage.getItem('gameSpeed');
+                    if (gameSpeed !== null && gameSpeed !== undefined && gameSpeed.length && !isNaN(gameSpeed)) {
+                      this.gameSpeed = Number(gameSpeed);
+                    }
 
                     this.setComPlayersRandomNames();
                     this.goToNextTurn();
@@ -1849,6 +1856,9 @@
                   setTimeout(() => {
                     this.chatMessageEnabled = true;
                   }, 5000);
+                },
+                gameSpeedChanged() {
+                  localStorage.setItem('gameSpeed', this.gameSpeed.toString());
                 }
             },
             computed: {
