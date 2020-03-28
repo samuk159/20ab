@@ -80,7 +80,7 @@
                   </div>
                   <div class="col">
                     <button type="button" class="btn btn-primary" @click="enterRoom(room)"
-                        :disabled="!room.players || room.players.length >= 4">Entrar</button>
+                        :disabled="!room.players || room.players.length >= 4 || room.inGame">Entrar</button>
                   </div>
                 </div>
               </div>
@@ -1598,7 +1598,10 @@
 
                     this.socket.on('getRooms', data => {
                       try {
-                        if (data.id && this.currentRoom && this.currentRoom.players
+                        if (data.id 
+                            && this.currentRoom 
+                            && !this.currentRoom.inGame
+                            && this.currentRoom.players
                             && this.currentRoom.players.length 
                             && this.currentRoom.players[0].id === this.playerId) {
                             this.sendEvent({
