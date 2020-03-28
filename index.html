@@ -444,7 +444,8 @@
                 connected: false,
                 socketIOServerURL: 'https://server-20ab.herokuapp.com',
                 roomsSearched: false,
-                isMultiplayerGameAndIAmTheRoomMaster: false
+                isMultiplayerGameAndIAmTheRoomMaster: false,
+                isPlayingCard: false
             },
             mounted() {
                 this.window = window;
@@ -511,7 +512,7 @@
                     this.goToNextTurn();
                   }              
                 },
-                goToNextTurn() {
+                goToNextTurn() { console.log('teste43');
                     this.playSound();
 
                     if (!this.currentRoom || this.isMultiplayerGameAndIAmTheRoomMaster) {
@@ -522,7 +523,7 @@
                       this.currentPlayerIndex = this.currentTrumpSuitChoicePlayerIndex;
                       this.showToast(this.players[this.currentTrumpSuitChoicePlayerIndex].name + ' irá escolher o nipe trunfo');
                     }
-
+                    console.log('teste44');
                     this.turn++;
                     this.lastWinner = null;
                     this.winners = [];
@@ -531,17 +532,17 @@
                     this.currentPhaseIndex = 0;
                     this.currentTrick = 0;
                     this.trumpSuitIndex = null;
-
+                    this.players.forEach(p => {
+                        p.cardsInHand = [];
+                        p.currentCard = null;
+                        p.isPlaying = true;
+                        p.currentTurnPoints = 0;
+                        p.exchangeCardsSelected = false;
+                        p.playOrPassSelected = false;
+                    });
+                    console.log('teste45');
                     if (!this.currentRoom || this.isMultiplayerGameAndIAmTheRoomMaster) {
                       this.shuffleDeck();
-                      this.players.forEach(p => {
-                          p.cardsInHand = [];
-                          p.currentCard = null;
-                          p.isPlaying = true;
-                          p.currentTurnPoints = 0;
-                          p.exchangeCardsSelected = false;
-                          p.playOrPassSelected = false;
-                      });
 
                       this.sleep().then(() => {
                         this.handleCurrentPhase();
@@ -554,6 +555,7 @@
                 handleCurrentPhase() {
                     switch (this.currentPhaseIndex) {
                         case 0: {
+                          if (!this.currentRoom || this.isMultiplayerGameAndIAmTheRoomMaster) {
                             if (this.isMultiplayerGameAndIAmTheRoomMaster) {
                               let tempPlayers = JSON.parse(JSON.stringify(this.players));
 
@@ -597,10 +599,12 @@
                                 });
                               });
                             }
+                          }
                             
-                            break;
+                          break;
                         }
                         case 1: {
+                          if (!this.currentRoom || this.isMultiplayerGameAndIAmTheRoomMaster) {
                             if (this.players[this.currentTrumpSuitChoicePlayerIndex].com) {
                                 let highestSuitInHand = this.players[this.currentTrumpSuitChoicePlayerIndex].cardsInHand[
                                     this.getBestCardInHandIndex(this.currentTrumpSuitChoicePlayerIndex)
@@ -608,10 +612,12 @@
 
                                 this.selectTrumpSuit(Object.values(this.suits).findIndex(s => s === highestSuitInHand));
                             }
+                          }
 
-                            break;
+                          break;
                         }
                         case 2: {
+                          if (!this.currentRoom || this.isMultiplayerGameAndIAmTheRoomMaster) {
                             if (this.isMultiplayerGameAndIAmTheRoomMaster) {
                               let tempPlayers = JSON.parse(JSON.stringify(this.players));
 
@@ -668,30 +674,33 @@
                                 });
                               });
                             }
+                          }
 
-                            break;
+                          break;
                         }
                         case 3: {
                             this.updateCardPowers();
                             
-                            for (let i = 0; i < this.players.length; i++) {
-                                if (this.players[i].com) {
-                                    let selectedCards = [];
+                            if (!this.currentRoom || this.isMultiplayerGameAndIAmTheRoomMaster) {
+                              for (let i = 0; i < this.players.length; i++) {
+                                  if (this.players[i].com) {
+                                      let selectedCards = [];
 
-                                    for (let j = 0; j < this.players[i].cardsInHand.length; j++) {
-                                        this.players[i].cardsInHand[i].selected = this.players[i].cardsInHand[i].power <= 4;
+                                      for (let j = 0; j < this.players[i].cardsInHand.length; j++) {
+                                          this.players[i].cardsInHand[i].selected = this.players[i].cardsInHand[i].power <= 4;
 
-                                        if (this.players[i].cardsInHand[i].selected) {
-                                            selectedCards.push(i);
-                                        }
+                                          if (this.players[i].cardsInHand[i].selected) {
+                                              selectedCards.push(i);
+                                          }
 
-                                        if (selectedCards.length >= 3) {
-                                            break;
-                                        }
-                                    }
+                                          if (selectedCards.length >= 3) {
+                                              break;
+                                          }
+                                      }
 
-                                    this.players[i].exchangeCardsSelected = true;
-                                }
+                                      this.players[i].exchangeCardsSelected = true;
+                                  }
+                              }
                             }
 
                             break;
@@ -699,27 +708,29 @@
                         case 4: {
                             this.updateCardPowers();
 
-                            for (let i = 0; i < this.players.length; i++) {
-                                if (this.players[i].com) {
-                                    let totalPower = 0;
-                                    this.players[i].cardsInHand.forEach(c => {
-                                        totalPower += c.power;
-                                    });
+                            if (!this.currentRoom || this.isMultiplayerGameAndIAmTheRoomMaster) {
+                              for (let i = 0; i < this.players.length; i++) {
+                                  if (this.players[i].com) {
+                                      let totalPower = 0;
+                                      this.players[i].cardsInHand.forEach(c => {
+                                          totalPower += c.power;
+                                      });
 
-                                    this.players[i].isPlaying = totalPower > 20;
-                                    this.players[i].playOrPassSelected = true;
-                                    this.showToast(this.players[i].name + ' decidiu ' + (this.players[i].isPlaying ? ' jogar' : ' passar'));
+                                      this.players[i].isPlaying = totalPower > 20;
+                                      this.players[i].playOrPassSelected = true;
+                                      this.showToast(this.players[i].name + ' decidiu ' + (this.players[i].isPlaying ? ' jogar' : ' passar'));
 
-                                    if (!this.players[i].isPlaying) {
-                                        this.playSound();
-                                    }
-                                }
+                                      if (!this.players[i].isPlaying) {
+                                          this.playSound();
+                                      }
+                                  }
+                              }
                             }
                             
                             break;
                         }
                         case 5: {
-                            //this.goToNextTrick();
+                            this.goToNextTrick();
 
                             break;
                         }
@@ -796,10 +807,8 @@
                         if (this.currentPhaseIndex > 5) {
                             this.currentPhaseIndex = 0;
                         }
-
-                        if (this.isMultiplayerGameAndIAmTheRoomMaster) {
-                          this.handleCurrentPhase();
-                        }
+                        
+                        this.handleCurrentPhase();
                     });
                 },
                 selectTrumpSuit(index) {
@@ -916,6 +925,7 @@
                           this.sleep().then(() => {
                               for (let j = 0; j < selectedCards.length; j++) {
                                   this.sleep(j + 1).then(() => {
+                                      this.playSound();
                                       this.players[i].cardsInHand.push(this.pickNextCard());
 
                                       if (j >= selectedCards.length - 1) {
@@ -1070,27 +1080,29 @@
                       this.goToNextPhase();
                     }
                 },
-                goToNextTrick() {
+                goToNextTrick() { console.log('teste35');
                     this.currentTrick++;
 
-                    if (this.currentTrick > 5) {
+                    if (this.currentTrick > 5) { console.log('teste36');
                         this.applyPoints();
-                    } else {
+                    } else { console.log('teste37');
                         this.currentTrickHighestCard = {
                             player: null, 
                             card: null
-                        };
+                        }; console.log('teste50');
                         this.players.forEach(p => {
                             p.currentCard = null;
-                        });
+                        });console.log('teste51');
+                        this.reloadPlayers();
 
-                        if (this.lastWinner != null) {
+                        if (this.lastWinner != null) { console.log('teste51');
                             this.currentPlayerIndex = this.lastWinner;
-                        }
-                        
-                        if (!this.players[this.currentPlayerIndex].isPlaying) {
+                        } console.log('teste52');
+                        console.log('this.currentPlayerIndex: ' + this.currentPlayerIndex);
+                        console.log('this.players[this.currentPlayerIndex].isPlaying: ' + this.players[this.currentPlayerIndex].isPlaying);
+                        if (!this.players[this.currentPlayerIndex].isPlaying) { console.log('teste53');
                             this.passToNextPlayingPlayer();
-                        } else {
+                        } else { console.log('teste54');
                             this.comPlayCard();
                         }
                     }
@@ -1105,10 +1117,10 @@
 
                     this.sleep(2).then(() => {
                         this.comPlayCard();
-                    });                    
+                    });
                 },
                 comPlayCard() {
-                    if (this.players[this.currentPlayerIndex].com) {
+                    if (this.players[this.currentPlayerIndex].com && (!this.currentRoom || this.isMultiplayerGameAndIAmTheRoomMaster)) {
                         if (this.players[this.currentPlayerIndex].isPlaying) {
                             let basePower = null;
                             if (this.currentTrickHighestCard.card !== null) {
@@ -1125,35 +1137,87 @@
                         }
                     }
                 },
-                playCard(index) {
+                playCard(index, playerIndex) { 
+                  console.log('teste4'); 
+                  console.log('playerIndex: ' + playerIndex);
+                  console.log('index: ' + index);
+                  this.isPlayingCard = true;
+                  let ignoreEvent = true;
+                  if (playerIndex === undefined) {
+                    ignoreEvent = false;
+                    playerIndex = this.currentPlayerIndex;
+                  }
+                  console.log('this.players[playerIndex].name: ' + this.players[playerIndex].name);
+                  console.log('this.players.length: ' + this.players.length);
+
                     this.playSound();
-                    this.players[this.currentPlayerIndex].currentCard = this.players[this.currentPlayerIndex].cardsInHand.splice(index, 1)[0];
+                    this.players[playerIndex].currentCard = this.players[playerIndex].cardsInHand.splice(index, 1)[0];
+                    console.log('this.players.length: ' + this.players.length);
+                    console.log('this.players[playerIndex].currentCard: ' + this.players[playerIndex].currentCard);
+                    this.reloadPlayers(); console.log('this.players[playerIndex].currentCard: ' + this.players[playerIndex].currentCard);
+                    console.log('this.players[playerIndex].currentCard: ' + this.players[playerIndex].currentCard);
+                    if (this.currentRoom && !ignoreEvent) {
+                      this.sendEvent({
+                        channel: this.currentRoom.id,
+                        message: {
+                          action: 'playCard',
+                          data: {
+                            playerId: this.players[playerIndex].id,
+                            index: index
+                          }
+                        }
+                      });
+                    } console.log('this.players[playerIndex].currentCard: ' + this.players[playerIndex].currentCard);
+                    
+                    let currentCard = this.players[playerIndex].currentCard;
 
-                    this.sleep(2).then(() => {
-                        if (this.currentTrickHighestCard.card === null 
-                            || this.players[this.currentPlayerIndex].currentCard.power > this.players[this.currentTrickHighestCard.player].currentCard.power) {
-                            this.currentTrickHighestCard.player = this.currentPlayerIndex;
-                            this.currentTrickHighestCard.card = index;
-                            this.players.forEach(p => {
-                                if (p.currentCard) {
-                                    p.currentCard.winning = false;
-                                }
-                            });
-                            this.players[this.currentPlayerIndex].currentCard.winning = true;
-                            this.reloadCurrentPlayerCurrentCard();
+                    this.sleep().then(() => {
+                      console.log('teste20');
+                      this.players[playerIndex].currentCard = currentCard;
+                      this.reloadPlayers();
+
+                      this.sleep().then(() => { console.log('currentCard: ' + currentCard);
+                        this.players[playerIndex].currentCard = currentCard;
+                        if (!this.players[playerIndex].currentCard) {
+                          this.showToastError('cagosetudo');
                         }
 
-                        if (this.players.filter(p => p.currentCard !== null).length >= this.players.filter(p => p.isPlaying).length) {
-                            this.findWinners();
-                        } else {
-                            this.passToNextPlayingPlayer();
-                        }
+                          console.log('teste5');
+                          console.log('playerIndex: ' + playerIndex);
+                          console.log('index: ' + index);
+                          console.log('this.players[playerIndex].name: ' + this.players[playerIndex].name);
+                          console.log('this.players.length: ' + this.players.length);
+                          console.log('this.players[playerIndex].currentCard: ' + this.players[playerIndex].currentCard);
+                          //this.players[playerIndex].currentCard = currentCard;
+                          //console.log('this.players[playerIndex].currentCard: ' + this.players[playerIndex].currentCard);
+
+                          if (this.currentTrickHighestCard.card === null 
+                              || this.players[playerIndex].currentCard.power > this.players[this.currentTrickHighestCard.player].currentCard.power) {
+                              this.currentTrickHighestCard.player = playerIndex;
+                              this.currentTrickHighestCard.card = index;
+                              this.players.forEach(p => {
+                                  if (p.currentCard) {
+                                      p.currentCard.winning = false;
+                                  }
+                              });
+                              this.players[playerIndex].currentCard.winning = true;
+                          }
+                          
+                          this.isPlayingCard = false;
+                          this.reloadPlayers();
+                          
+                          if (this.players.filter(p => p.currentCard !== null).length >= this.players.filter(p => p.isPlaying).length) {
+                              this.findWinners();
+                          } else {
+                              this.passToNextPlayingPlayer();
+                          }
+                      });
                     });
                 },
-                findWinners() {
+                findWinners() { console.log('findWinners');
                     this.lastWinner = this.currentTrickHighestCard.player;
                     this.winners = [this.currentTrickHighestCard.player];
-
+                    console.log('teste30');
                     for (let i = 0; i < this.players.length; i++) {
                         let p = this.players[i];
 
@@ -1163,7 +1227,7 @@
                             this.winners.push(i);
                         }
                     }
-
+                    console.log('teste31');
                     if (this.winners.length > 1) {
                         let winnersString = '';
                         for (let i = 0; i < this.winners.length; i++) {
@@ -1182,15 +1246,15 @@
                     } else {
                         this.showToast(this.players[this.currentTrickHighestCard.player ].name + ' venceu a rodada');
                     }
-
+                    console.log('teste32');
                     this.winners.forEach(w => {
                         this.players[w].currentTurnPoints++;
-                    });
-                    this.sleep(4).then(() => {                      
+                    }); console.log('teste33');
+                    this.sleep(4).then(() => { console.log('teste34');                      
                         this.goToNextTrick();
                     });
                 },
-                applyPoints() {
+                applyPoints() { console.log('teste38');
                     let lowestPoint = 0;
 
                     for (let i = 0; i < this.players.length; i++) {
@@ -1212,20 +1276,15 @@
                             }
                         }
                     }
-
-                    let gameWinners = this.players.filter(p => p.points === lowestPoint);
-                    if (gameWinners.length === 1) {
+                    console.log('teste39');
+                    let gameWinners = this.players.filter(p => p.points === lowestPoint); console.log('teste40');
+                    if (gameWinners.length === 1) { console.log('teste41');
                         this.showToast(gameWinners[0].name + ' venceu a partida');
                         this.winner = gameWinners[0];
                         this.gameStarted = false;
-                    } else {
+                    } else { console.log('teste42');
                         this.goToNextTurn();
                     }
-                },
-                reloadCurrentPlayerCurrentCard() {
-                    let currentCard = this.players[this.currentPlayerIndex].currentCard;
-                    this.players[this.currentPlayerIndex].currentCard = null;
-                    this.players[this.currentPlayerIndex].currentCard = currentCard;
                 },
                 getRandomArbitrary(min, max) {
                     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -1657,10 +1716,14 @@
                           break;
                         }
                         case 'playOrPassSelected': {
-                          if (this.isMultiplayerGameAndIAmTheRoomMaster) {
+                          if (data.data.playerId !== this.playerId) {
                             let index = this.players.findIndex(p => p.id === data.data.playerId);
+                            this.players[index].isPlaying = data.data.isPlaying;
                             this.players[index].playOrPassSelected = true;
-                            this.verifyIfAllPlayersSelectedPlayOrPass();
+
+                            if (this.isMultiplayerGameAndIAmTheRoomMaster) {
+                              this.verifyIfAllPlayersSelectedPlayOrPass();
+                            }
                           }
 
                           break;
@@ -1675,6 +1738,24 @@
                             }
 
                             this.goToNextPhase();
+                          }
+
+                          break;
+                        }
+                        case 'playCard': {
+                          if (data.data.playerId !== this.playerId) {
+                            console.log('data.data.playerId: ' + data.data.playerId);
+                            let index = this.players.findIndex(p => p.id === data.data.playerId);
+
+                            if (!this.isMultiplayerGameAndIAmTheRoomMaster || !this.players[index].com) { console.log('teste1');
+                              if (this.isPlayingCard) { console.log('teste2');
+                                this.sleep(2).then(() => { console.log('teste10');
+                                  this.playCard(data.data.index, index);
+                                });
+                              } else { console.log('teste3');
+                                this.playCard(data.data.index, index);
+                              }
+                            }
                           }
 
                           break;
