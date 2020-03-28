@@ -55,12 +55,6 @@ body {
     padding-right: 2px;
 }
 
-.center-div {
-    position:absolute;
-    left: 50%;
-    top: 50%;
-}
-
 .suit-button {
     margin-left: 20px;
     margin-right: 20px;
@@ -87,6 +81,77 @@ body {
 
 #chat-message-input {
   position: absolute;
-  left: 80px;
   bottom: 5px;
+}
+
+@media (min-width: 1025px) and (max-width: 1359px) {
+  .dynamic-text {
+    font-size: 1vw;
+  }
+}
+
+@media (min-width: 851px) and (max-width: 1024px) {
+  .dynamic-text {
+    font-size: 0.9vw;
+  }
+}
+
+.center-div {
+  position:absolute;
+  left: 50%;
+}
+
+.inner-center-div {
+  position:relative;
+  left: -50%;
+}
+
+@media (max-width: 850px) {
+  .dynamic-text {
+    font-size: 1vw;
+  }
+
+  .center-div {
+    top: 40%;
+  }
+
+  .inner-center-div {
+    top: -40%;
+  }
+
+  .mobile-hide {
+    display: none;
+  }
+
+  #chat-message-input {
+    right: 5px;
+    width: 150px;
+  }
+
+  .jq-toast-wrap {
+    width: 150px;
+  }
+
+  .jq-toast-single {
+    font-size: 8px;
+  }
+
+  .jq-toast-heading {
+    font-size: 8px !important;
+    margin-bottom: 0px !important;
+  }
+}
+
+@media (min-width: 851px) {
+  .center-div {
+    top: 50%;
+  }
+
+  .inner-center-div {
+    top: -50%;
+  }
+
+  #chat-message-input {
+    left: 80px;
+  }
 }

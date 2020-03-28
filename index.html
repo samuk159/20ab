@@ -14,25 +14,25 @@
     <div id="app" style="height: 100vh; overflow: hidden;">
         <div v-if="currentPage === 'menu'">
             <div class="center-div">
-                <div style="position: relative; left: -50%; top: -50%;">
+                <div class="inner-center-div">
                     <div class="row justify-content-center">
                         <div class="form-group col-auto">
                             <label for="nicknameInput">Apelido</label>
-                            <input type="text" class="form-control" id="nicknameInput" maxlength="25"
+                            <input type="text" class="form-control" id="nicknameInput" maxlength="10"
                             placeholder="Digite um apelido" v-model="nickname">
                         </div>
                     </div>
                     <div class="row justify-content-center">
                         <button @click="goToPage('game')" type="button" 
                             class="btn btn-secondary col-auto"
-                            :disabled="!nickname || nickname.length < 3 || nickname.length > 25">
+                            :disabled="!nickname || nickname.length < 3 || nickname.length > 10">
                             Um jogador
                         </button>
                     </div>
                     <div class="row justify-content-center mt-3">
                         <button @click="goToPage('lobby')" type="button" 
                             class="btn btn-secondary col-auto"
-                            :disabled="!nickname || nickname.length < 3 || nickname.length > 25">
+                            :disabled="!nickname || nickname.length < 3 || nickname.length > 10">
                             Multijogador
                         </button>
                     </div>
@@ -42,7 +42,7 @@
 
         <div v-if="currentPage === 'lobby'">
           <div class="card m-3">
-            <div class="card-header">
+            <div class="card-header mobile-hide">
               Salas
               <div class="row">
                 <div class="col font-weight-bold">Nome</div>
@@ -66,7 +66,7 @@
                 </div>
               </div>
 
-              <div v-if="!loading && rooms && rooms.length" :style="'overflow: scroll; max-height: ' + (window.innerHeight - 250) + 'px;'">
+              <div v-if="!loading && rooms && rooms.length" :style="'overflow: scroll; max-height: ' + (window.innerHeight - (window.innerWidth > 850 ? 225 : 150)) + 'px;'">
                 <div v-for="(room, index) in rooms" class="row my-3" :key="'room-' + index" :class="{ 'bg-light': index % 2 != 0 }">
                   <div class="col">{{room.name}}</div>
                   <div class="col">{{room.players ? room.players.length : 0}} / 4</div>
@@ -102,34 +102,30 @@
           </div>
         </div>
 
-        <div class="center-div">
-          <div style="position: relative; left: -50%;">
-            <div v-if="currentPage === 'room'">
-              <div v-if="currentRoom" class="card m-3">
-                <div class="card-header">
-                  <div class="row justify-content-between">
-                    <div class="col-auto">
-                      {{currentRoom.name}}
-                    </div>
-                    <div class="col-auto">
-                      {{currentRoom.players ? currentRoom.players.length : 0}} / 4
-                    </div>
-                  </div>
+        <div v-if="currentPage === 'room'">
+          <div v-if="currentRoom" class="card m-3">
+            <div class="card-header">
+              <div class="row justify-content-between">
+                <div class="col-auto">
+                  {{currentRoom.name}}
                 </div>
-                <div class="card-body py-0 px-3">
-                  <div v-if="currentRoom.players && currentRoom.players.length">
-                    <div v-for="(player, index) in currentRoom.players" class="row my-3" :key="'room-' + index" :class="{ 'bg-light': index % 2 != 0 }">
-                      <div class="col">{{player.name}}</div>
-                    </div>
-                  </div>
+                <div class="col-auto">
+                  {{currentRoom.players ? currentRoom.players.length : 0}} / 4
                 </div>
-                <div v-if="currentRoom.players && currentRoom.players.length && currentRoom.players[0].id === playerId" 
-                    class="card-footer">
-                  <div class="row justify-content-end">
-                    <div class="col-auto">
-                      <button type="button" class="btn btn-primary" @click="startCurrentRoom()">Iniciar partida</button>
-                    </div>
-                  </div>
+              </div>
+            </div>
+            <div class="card-body py-0 px-3">
+              <div v-if="currentRoom.players && currentRoom.players.length">
+                <div v-for="(player, index) in currentRoom.players" class="row my-3" :key="'room-' + index" :class="{ 'bg-light': index % 2 != 0 }">
+                  <div class="col">{{player.name}}</div>
+                </div>
+              </div>
+            </div>
+            <div v-if="currentRoom.players && currentRoom.players.length && currentRoom.players[0].id === playerId" 
+                class="card-footer">
+              <div class="row justify-content-end">
+                <div class="col-auto">
+                  <button type="button" class="btn btn-primary" @click="startCurrentRoom()">Iniciar partida</button>
                 </div>
               </div>
             </div>
@@ -139,7 +135,7 @@
         <div v-if="currentPage === 'game'">
             <div class="row justify-content-between">
                 <div class="col-auto">
-                    <span class="m-3 font-weight-bold text-white">Criado por Samuel Alles Remlinger</span>
+                    <span class="m-3 font-weight-bold text-white dynamic-text">Criado por Samuel Alles Remlinger</span>
                 </div>
                 <div class="col-auto">
                     <div class="mt-2 mr-3">
@@ -149,14 +145,14 @@
                 </div>
             </div>
 
-            <div class="row">
+            <div class="row dynamic-text">
                 <div class="col">
                     <div :style="'margin-left: ' + (cardSize.height + 30) + 'px;'">
                         <span v-if="turn" class="font-weight-bold text-white">Turno: {{turn}}<br></span>                
                         <span v-if="turn" class="font-weight-bold text-white">
-                            Fase: {{phases[currentPhaseIndex].name}}<br>
+                            Fase: <br>{{phases[currentPhaseIndex].name}}<br><br>
                         </span>
-                        <span class="font-weight-bold text-white">Nipe trunfo: </span>
+                        <span class="font-weight-bold text-white">Nipe trunfo: </span><br>
                         <img v-if="trumpSuitIndex !== null" :src="'assets/img/suits/' + Object.values(suits)[trumpSuitIndex] + '.png'">
                     </div>
                 </div>
@@ -178,7 +174,8 @@
             </div>
 
             <img v-if="gameStarted && !players[3].currentCard && currentPlayerIndex === 3" src="assets/img/arrow.png" class="position-absolute rotate90" 
-                :style="'left: ' + (cardSize.height + 30) + 'px; top: ' + ((window.innerHeight / 2) - 29) + 'px;'">
+                :style="'left: ' + (cardSize.height + 30) + 'px; top: ' + ((window.innerHeight / 2) - ((window.innerHeight / 987) * 29)) + 'px;'"
+                :width="(window.innerHeight / 987) * 58" :height="(window.innerHeight / 987) * 32">
 
             <img v-if="!winner && players[3].currentCard" :src="'assets/img/cards/' + players[3].currentCard.name + '.png'" 
                 class="position-absolute" :height="cardSize.height" :class="{'selected-card': players[3].currentCard.winning}"
@@ -189,13 +186,13 @@
                 :style="'top: ' + ((window.innerHeight / 2) - (cardSize.height / 2) - (cardSize.height / 2) - 10) + 'px;left: ' + ((window.innerWidth / 2) - (cardSize.width / 2)) + 'px;'">
 
             <div id="player2-cards">
-                <div style="position: relative; left: -50%;">
+                <div class="inner-center-div">
                     <div v-if="players[2].isPlaying" class="row justify-content-center">
                         <img v-for="(card, index) in players[2].cardsInHand" v-bind:key="'player2cards-' +  index" 
                             src="assets/img/cards/back.jpg" class="card-padding-x" :height="cardSize.height">
                     </div>
                     <div v-if="gameStarted && !players[2].currentCard && currentPlayerIndex === 2" class="row justify-content-center" style="margin-top: 20px;">
-                        <img src="assets/img/arrow.png" class="rotate180">
+                        <img src="assets/img/arrow.png" class="rotate180" :width="(window.innerHeight / 987) * 58" :height="(window.innerHeight / 987) * 32">
                     </div>
                 </div>
             </div>
@@ -205,9 +202,9 @@
                 :style="'bottom: ' + ((window.innerHeight / 2) - (cardSize.height / 2) - (cardSize.height / 2) - 10) + 'px;left: ' + ((window.innerWidth / 2) - (cardSize.width / 2)) + 'px;'">
 
             <div id="player0-cards">
-                <div style="position: relative; left: -50%;">
+                <div class="inner-center-div">
                     <div v-if="gameStarted && !players[0].currentCard && currentPlayerIndex === 0" class="row justify-content-center" style="margin-bottom: 20px;">
-                        <img src="assets/img/arrow.png">
+                        <img src="assets/img/arrow.png" :width="(window.innerHeight / 987) * 58" :height="(window.innerHeight / 987) * 32">
                     </div>
                     <div v-if="players[0].isPlaying" class="row justify-content-center">
                         <div v-for="(card, index) in players[0].cardsInHand" v-bind:key="'player0cards-' + index"
@@ -227,14 +224,15 @@
             </div>
 
             <img v-if="gameStarted && !players[1].currentCard && currentPlayerIndex === 1" src="assets/img/arrow.png" class="position-absolute rotate270" 
-                :style="'right: ' + (cardSize.height + 30) + 'px; top: ' + ((window.innerHeight / 2) - 29) + 'px;'">
+                :style="'right: ' + (cardSize.height + 30) + 'px; top: ' + ((window.innerHeight / 2) - ((window.innerHeight / 987) * 29)) + 'px;'"
+                :width="(window.innerHeight / 987) * 58" :height="(window.innerHeight / 987) * 32">
 
             <img v-if="!winner && players[1].currentCard" :src="'assets/img/cards/' + players[1].currentCard.name + '.png'" 
                 class="position-absolute" :height="cardSize.height" :class="{'selected-card': players[1].currentCard.winning}"
                 :style="'top: ' + ((window.innerHeight / 2) - (cardSize.height / 2)) + 'px;right: ' + ((window.innerWidth / 2) - (cardSize.width / 2) - cardSize.width - 40) + 'px;'">
 
             <div class="center-div">
-                <div style="position: relative; left: -50%; top: -50%;">
+                <div class="inner-center-div">
                     <div v-if="currentTrumpSuitChoicePlayerIndex === 0 && currentPhaseIndex === 1 && trumpSuitIndex === null">
                         <img v-for="(suit, index) in Object.values(suits)" v-bind:key="'suits-' + index"
                             :src="'assets/img/suits/' + suit + '.png'" class="suit-button cursor-pointer"
@@ -1318,14 +1316,19 @@
                 },
                 showToast(text, additionalOptions) {
                     let options = {
-                        text: text,
-                        hideAfter: this.sleepInterval * 15,
-                        stack: 10,
-                        position: {
-                          bottom: 50,
-                          left: 10
-                        }
+                      text: text,
+                      hideAfter: this.sleepInterval * 15,
+                      position: {
+                        bottom: 50,
+                        left: 10
+                      }
                     };
+
+                    if (window.innerWidth > 850) {
+                      options.stack = 10;
+                    } else {                      
+                      options.stack = 5;
+                    }
 
                     if (additionalOptions) {
                       for (key in additionalOptions) {
@@ -1373,8 +1376,14 @@
                     }
                 },
                 setCardSize() {
+                    let windowHeight = this.window.innerHeight;
                     let oldHeight = this.cardSize.height;
-                    this.cardSize.height = (this.window.innerHeight / 4) - (50 / 4);
+
+                    if (this.window.innerWidth < 1200 && this.window.innerWidth > 850) {
+                      windowHeight = this.window.innerWidth * 0.6;
+                    }
+
+                    this.cardSize.height = (windowHeight / 4) - (50 / 4);
                     this.cardSize.width = (this.cardSize.height * this.cardSize.width) / oldHeight;
                 },
                 goToPage(page) {
