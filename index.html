@@ -81,7 +81,7 @@
                 </div>
               </div>
 
-              <div v-if="!loading && rooms && rooms.length" :style="'overflow: scroll; max-height: ' + (window.innerHeight - (window.innerWidth > 850 ? 225 : 150)) + 'px;'">
+              <div v-if="!loading && rooms && rooms.length" :style="'overflow: scroll; max-height: ' + (windowHeight - (window.innerWidth > 850 ? 225 : 150)) + 'px;'">
                 <div v-for="(room, index) in rooms" class="row my-3" :key="'room-' + index" :class="{ 'bg-light': index % 2 != 0 }">
                   <div class="col">{{room.name}}</div>
                   <div class="col">{{room.players ? room.players.length : 0}} / 4</div>
@@ -185,20 +185,20 @@
             <div v-if="players[3].isPlaying">
                 <img v-for="(card, index) in players[3].cardsInHand" v-bind:key="'player3cards-' + index" 
                     src="assets/img/cards/back-hor.jpg" class="player3-card" :width="cardSize.height"
-                    :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[3].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
+                    :style="'top: ' + ((windowHeight / 2) - (((cardSize.width + 4) * players[3].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
             </div>
 
             <img v-if="gameStarted && !players[3].currentCard && currentPlayerIndex === 3" src="assets/img/arrow.png" class="position-absolute rotate90" 
-                :style="'left: ' + (cardSize.height + 30) + 'px; top: ' + ((window.innerHeight / 2) - ((window.innerHeight / 987) * 29)) + 'px;'"
-                :width="(window.innerHeight / 987) * 58" :height="(window.innerHeight / 987) * 32">
+                :style="'left: ' + (cardSize.height + 30) + 'px; top: ' + ((windowHeight / 2) - ((windowHeight / 987) * 29)) + 'px;'"
+                :width="(windowHeight / 987) * 58" :height="(windowHeight / 987) * 32">
 
             <img v-if="!winner && players[3].currentCard" :src="'assets/img/cards/' + players[3].currentCard.name + '.png'" 
                 class="position-absolute" :height="cardSize.height" :class="{'selected-card': players[3].currentCard.winning}"
-                :style="'top: ' + ((window.innerHeight / 2) - (cardSize.height / 2)) + 'px;left: ' + ((window.innerWidth / 2) - (cardSize.width / 2) - cardSize.width - 40) + 'px;'">
+                :style="'top: ' + ((windowHeight / 2) - (cardSize.height / 2)) + 'px;left: ' + ((window.innerWidth / 2) - (cardSize.width / 2) - cardSize.width - 40) + 'px;'">
 
             <img v-if="!winner && players[2].currentCard" :src="'assets/img/cards/' + players[2].currentCard.name + '.png'" 
                 class="position-absolute" :height="cardSize.height" :class="{'selected-card': players[2].currentCard.winning}"
-                :style="'top: ' + ((window.innerHeight / 2) - (cardSize.height / 2) - (cardSize.height / 2) - 10) + 'px;left: ' + ((window.innerWidth / 2) - (cardSize.width / 2)) + 'px;'">
+                :style="'top: ' + ((windowHeight / 2) - (cardSize.height / 2) - (cardSize.height / 2) - 10) + 'px;left: ' + ((window.innerWidth / 2) - (cardSize.width / 2)) + 'px;'">
 
             <div id="player2-cards">
                 <div class="inner-center-div">
@@ -207,19 +207,19 @@
                             src="assets/img/cards/back.jpg" class="card-padding-x" :height="cardSize.height">
                     </div>
                     <div v-if="gameStarted && !players[2].currentCard && currentPlayerIndex === 2" class="row justify-content-center" style="margin-top: 20px;">
-                        <img src="assets/img/arrow.png" class="rotate180" :width="(window.innerHeight / 987) * 58" :height="(window.innerHeight / 987) * 32">
+                        <img src="assets/img/arrow.png" class="rotate180" :width="(windowHeight / 987) * 58" :height="(windowHeight / 987) * 32">
                     </div>
                 </div>
             </div>
 
             <img v-if="!winner && players[0].currentCard" :src="'assets/img/cards/' + players[0].currentCard.name + '.png'" 
                 class="position-absolute" :height="cardSize.height" :class="{'selected-card': players[0].currentCard.winning}"
-                :style="'bottom: ' + ((window.innerHeight / 2) - (cardSize.height / 2) - (cardSize.height / 2) - 10) + 'px;left: ' + ((window.innerWidth / 2) - (cardSize.width / 2)) + 'px;'">
+                :style="'bottom: ' + ((windowHeight / 2) - (cardSize.height / 2) - (cardSize.height / 2) - 10) + 'px;left: ' + ((window.innerWidth / 2) - (cardSize.width / 2)) + 'px;'">
 
             <div id="player0-cards">
                 <div class="inner-center-div">
                     <div v-if="gameStarted && !players[0].currentCard && currentPlayerIndex === 0" class="row justify-content-center" style="margin-bottom: 20px;">
-                        <img src="assets/img/arrow.png" :width="(window.innerHeight / 987) * 58" :height="(window.innerHeight / 987) * 32">
+                        <img src="assets/img/arrow.png" :width="(windowHeight / 987) * 58" :height="(windowHeight / 987) * 32">
                     </div>
                     <div v-if="players[0].isPlaying" class="row justify-content-center">
                         <div v-for="(card, index) in players[0].cardsInHand" v-bind:key="'player0cards-' + index"
@@ -235,16 +235,16 @@
             <div v-if="players[1].isPlaying">
                 <img v-for="(card, index) in players[1].cardsInHand" v-bind:key="'player1cards-' + index" 
                     src="assets/img/cards/back-hor.jpg" class="player1-card" :width="cardSize.height"
-                    :style="'top: ' + ((window.innerHeight / 2) - (((cardSize.width + 4) * players[1].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
+                    :style="'top: ' + ((windowHeight / 2) - (((cardSize.width + 4) * players[1].cardsInHand.length) / 2) + ((cardSize.width + 4) * index)) + 'px;'">
             </div>
 
             <img v-if="gameStarted && !players[1].currentCard && currentPlayerIndex === 1" src="assets/img/arrow.png" class="position-absolute rotate270" 
-                :style="'right: ' + (cardSize.height + 30) + 'px; top: ' + ((window.innerHeight / 2) - ((window.innerHeight / 987) * 29)) + 'px;'"
-                :width="(window.innerHeight / 987) * 58" :height="(window.innerHeight / 987) * 32">
+                :style="'right: ' + (cardSize.height + 30) + 'px; top: ' + ((windowHeight / 2) - ((windowHeight / 987) * 29)) + 'px;'"
+                :width="(windowHeight / 987) * 58" :height="(windowHeight / 987) * 32">
 
             <img v-if="!winner && players[1].currentCard" :src="'assets/img/cards/' + players[1].currentCard.name + '.png'" 
                 class="position-absolute" :height="cardSize.height" :class="{'selected-card': players[1].currentCard.winning}"
-                :style="'top: ' + ((window.innerHeight / 2) - (cardSize.height / 2)) + 'px;right: ' + ((window.innerWidth / 2) - (cardSize.width / 2) - cardSize.width - 40) + 'px;'">
+                :style="'top: ' + ((windowHeight / 2) - (cardSize.height / 2)) + 'px;right: ' + ((window.innerWidth / 2) - (cardSize.width / 2) - cardSize.width - 40) + 'px;'">
 
             <div class="center-div">
                 <div class="inner-center-div">
@@ -468,11 +468,11 @@
                 chatMessageEnabled: true,
                 isScreenPortrait: false,
                 isMobile: false,
-                requestFullScreenButtonPressed: false
+                requestFullScreenButtonPressed: false,
+                windowHeight: 768
             },
             mounted() {
                 this.playerId = this.getUUID();
-                this.setCardSize();
                 this.setSound();
                 this.generateCards();
                 
@@ -480,14 +480,21 @@
                 if (nickname && nickname.length) {
                     this.nickname = nickname;
                 }
-                
+
                 this.reloadPage();
             },
             methods: {
                 reloadPage() {
                   this.window = window;
                   this.isMobile = window.innerWidth <= 850;
+                  this.windowHeight = window.innerHeight;
+
+                  if (this.isMobile) {
+                    this.windowHeight -= 50;
+                  }
+
                   this.isScreenPortrait = window.innerWidth < window.innerHeight;
+                  this.setCardSize();
                   
                   if (this.isScreenPortrait) {
                     this.showToastError('Por favor mude a orientação da tela para paisagem e clique em recarregar');
@@ -1406,7 +1413,7 @@
                     }
                 },
                 setCardSize() {
-                    let windowHeight = this.window.innerHeight;
+                    let windowHeight = this.windowHeight;
                     let oldHeight = this.cardSize.height;
 
                     if (this.window.innerWidth < 1200 && this.window.innerWidth > 850) {
