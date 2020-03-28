@@ -214,7 +214,7 @@
 
             <img v-if="!winner && players[0].currentCard" :src="'assets/img/cards/' + players[0].currentCard.name + '.png'" 
                 class="position-absolute" :height="cardSize.height" :class="{'selected-card': players[0].currentCard.winning}"
-                :style="'bottom: ' + ((windowHeight / 2) - (cardSize.height / 2) - (cardSize.height / 2) - 10) + 'px;left: ' + ((window.innerWidth / 2) - (cardSize.width / 2)) + 'px;'">
+                :style="'top: ' + ((windowHeight / 2) + (cardSize.height / 2) - (cardSize.height / 2) + 10) + 'px;left: ' + ((window.innerWidth / 2) - (cardSize.width / 2)) + 'px;'">
 
             <div id="player0-cards">
                 <div class="inner-center-div">
@@ -1427,7 +1427,7 @@
                     this.playerCardHeight = this.cardSize.height;
 
                     if (this.isMobile) {
-                      this.playerCardHeight *= 1.5;
+                      this.playerCardHeight *= 2;
                     }
                 },
                 goToPage(page) {
