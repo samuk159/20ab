@@ -1355,7 +1355,6 @@
                 showToast(text, additionalOptions) {
                     let options = {
                       text: text,
-                      hideAfter: this.sleepInterval * 15,
                       position: {
                         bottom: 50,
                         left: 10
@@ -1364,8 +1363,10 @@
 
                     if (window.innerWidth > 850) {
                       options.stack = 10;
+                      options.hideAfter = this.sleepInterval * 15;
                     } else {                      
-                      options.stack = 5;
+                      options.stack = 2;
+                      options.hideAfter = this.sleepInterval * 5;
                     }
 
                     if (additionalOptions) {
