@@ -282,7 +282,7 @@
                         </span>
                     </div>
 
-                    <div v-if="!gameStarted">
+                    <div v-if="!gameStarted && (!currentRoom || isMultiplayerGameAndIAmTheRoomMaster)">
                         <div class="row justify-content-center pt-3">
                             <button @click="startGame()" type="button" 
                                 class="btn btn-secondary col-auto">Reiniciar partida</button>
@@ -475,7 +475,22 @@
                     });
                 },
                 startGame() {
+                  let firstRoomMatch = !this.winner;
                   this.winner = null;
+                  this.players.forEach(p => {
+                    p.points = 20;
+                    p.currentCard = null;
+                  });
+                  this.reloadPlayers();
+
+                  if (this.isMultiplayerGameAndIAmTheRoomMaster && !firstRoomMatch) {
+                    this.sendEvent({
+                      channel: this.currentRoom.id,
+                      message: {
+                        action: 'gameRestart'
+                      }
+                    });
+                  }
 
                   if (this.currentRoom) {
                     this.socket.on(this.currentRoom.id, data => {
@@ -487,27 +502,33 @@
 
                       this.isMultiplayerGameAndIAmTheRoomMaster = player && player.id === this.playerId;
                     }
-
+                    
                     if (this.isMultiplayerGameAndIAmTheRoomMaster) {
                       this.gameStarted = true;
                       this.currentTrumpSuitChoicePlayerIndex = this.getRandomArbitrary(0, 3);
                       this.currentRoom.inGame = true;
-                      this.sendEvent({
-                        channel: 'roomUpdate',
-                        message: this.currentRoom
-                      });
+
+                      if (firstRoomMatch) {
+                        this.sendEvent({
+                          channel: 'roomUpdate',
+                          message: this.currentRoom
+                        });
+                      }
 
                       this.players = this.currentRoom.players;
-                      this.setComPlayersRandomNames();
+
+                      if (firstRoomMatch) {
+                        this.setComPlayersRandomNames();
+                      } else {
+                        this.goToNextTurn();
+                      }
                     } else {
                       this.goToNextTurn();
                     }
                   } else {
                     this.gameStarted = true;
                     this.currentTrumpSuitChoicePlayerIndex = this.getRandomArbitrary(0, 3);
-                    this.players.forEach(p => {
-                        p.points = 20;
-                    });
+
                     this.setComPlayersRandomNames();
                     this.goToNextTurn();
                   }              
@@ -1323,8 +1344,9 @@
                     this.sound.style.display = "none";
                 },
                 playSound() {
-                    this.sound.pause();
-                    this.sound.play();
+                    if (this.sound.paused) {
+                      this.sound.play();
+                    }
                 },
                 setCardSize() {
                     let oldHeight = this.cardSize.height;
@@ -1734,6 +1756,17 @@
                                 this.playCard(data.data.index, index);
                               }
                             }
+                          }
+
+                          break;
+                        }
+                        case 'gameRestart': {
+                          if (!this.isMultiplayerGameAndIAmTheRoomMaster) {
+                            this.winner = null;
+                            this.gameStarted = true;
+                            this.players.forEach(p => {
+                              p.points = 20;
+                            });
                           }
 
                           break;
