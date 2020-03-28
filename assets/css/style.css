@@ -108,7 +108,7 @@ body {
 
 @media (max-width: 850px) {
   .dynamic-text {
-    font-size: 1vw;
+    font-size: 1.1vw;
   }
 
   .center-div {
