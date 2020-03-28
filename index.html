@@ -512,7 +512,7 @@
                     this.goToNextTurn();
                   }              
                 },
-                goToNextTurn() { console.log('teste43');
+                goToNextTurn() {
                     this.playSound();
 
                     if (!this.currentRoom || this.isMultiplayerGameAndIAmTheRoomMaster) {
@@ -523,7 +523,7 @@
                       this.currentPlayerIndex = this.currentTrumpSuitChoicePlayerIndex;
                       this.showToast(this.players[this.currentTrumpSuitChoicePlayerIndex].name + ' irá escolher o nipe trunfo');
                     }
-                    console.log('teste44');
+                    
                     this.turn++;
                     this.lastWinner = null;
                     this.winners = [];
@@ -540,7 +540,7 @@
                         p.exchangeCardsSelected = false;
                         p.playOrPassSelected = false;
                     });
-                    console.log('teste45');
+                    
                     if (!this.currentRoom || this.isMultiplayerGameAndIAmTheRoomMaster) {
                       this.shuffleDeck();
 
@@ -1080,29 +1080,28 @@
                       this.goToNextPhase();
                     }
                 },
-                goToNextTrick() { console.log('teste35');
+                goToNextTrick() {
                     this.currentTrick++;
 
-                    if (this.currentTrick > 5) { console.log('teste36');
+                    if (this.currentTrick > 5) {
                         this.applyPoints();
-                    } else { console.log('teste37');
+                    } else {
                         this.currentTrickHighestCard = {
                             player: null, 
                             card: null
-                        }; console.log('teste50');
+                        };
                         this.players.forEach(p => {
                             p.currentCard = null;
-                        });console.log('teste51');
+                        });
                         this.reloadPlayers();
 
-                        if (this.lastWinner != null) { console.log('teste51');
+                        if (this.lastWinner != null) {
                             this.currentPlayerIndex = this.lastWinner;
-                        } console.log('teste52');
-                        console.log('this.currentPlayerIndex: ' + this.currentPlayerIndex);
-                        console.log('this.players[this.currentPlayerIndex].isPlaying: ' + this.players[this.currentPlayerIndex].isPlaying);
-                        if (!this.players[this.currentPlayerIndex].isPlaying) { console.log('teste53');
+                        }
+
+                        if (!this.players[this.currentPlayerIndex].isPlaying) {
                             this.passToNextPlayingPlayer();
-                        } else { console.log('teste54');
+                        } else {
                             this.comPlayCard();
                         }
                     }
@@ -1137,87 +1136,67 @@
                         }
                     }
                 },
-                playCard(index, playerIndex) { 
-                  console.log('teste4'); 
-                  console.log('playerIndex: ' + playerIndex);
-                  console.log('index: ' + index);
+                playCard(index, playerIndex) {
                   this.isPlayingCard = true;
                   let ignoreEvent = true;
                   if (playerIndex === undefined) {
                     ignoreEvent = false;
                     playerIndex = this.currentPlayerIndex;
                   }
-                  console.log('this.players[playerIndex].name: ' + this.players[playerIndex].name);
-                  console.log('this.players.length: ' + this.players.length);
 
-                    this.playSound();
-                    this.players[playerIndex].currentCard = this.players[playerIndex].cardsInHand.splice(index, 1)[0];
-                    console.log('this.players.length: ' + this.players.length);
-                    console.log('this.players[playerIndex].currentCard: ' + this.players[playerIndex].currentCard);
-                    this.reloadPlayers(); console.log('this.players[playerIndex].currentCard: ' + this.players[playerIndex].currentCard);
-                    console.log('this.players[playerIndex].currentCard: ' + this.players[playerIndex].currentCard);
-                    if (this.currentRoom && !ignoreEvent) {
-                      this.sendEvent({
-                        channel: this.currentRoom.id,
-                        message: {
-                          action: 'playCard',
-                          data: {
-                            playerId: this.players[playerIndex].id,
-                            index: index
-                          }
+                  this.playSound();
+                  this.players[playerIndex].currentCard = this.players[playerIndex].cardsInHand.splice(index, 1)[0];
+                  this.reloadPlayers();
+                  
+                  if (this.currentRoom && !ignoreEvent) {
+                    this.sendEvent({
+                      channel: this.currentRoom.id,
+                      message: {
+                        action: 'playCard',
+                        data: {
+                          playerId: this.players[playerIndex].id,
+                          index: index
                         }
-                      });
-                    } console.log('this.players[playerIndex].currentCard: ' + this.players[playerIndex].currentCard);
-                    
-                    let currentCard = this.players[playerIndex].currentCard;
+                      }
+                    });
+                  }
+                  
+                  let currentCard = this.players[playerIndex].currentCard;
+
+                  this.sleep().then(() => {
+                    this.players[playerIndex].currentCard = currentCard;
+                    this.reloadPlayers();
 
                     this.sleep().then(() => {
-                      console.log('teste20');
                       this.players[playerIndex].currentCard = currentCard;
+
+                      if (this.currentTrickHighestCard.card === null 
+                          || this.players[playerIndex].currentCard.power > this.players[this.currentTrickHighestCard.player].currentCard.power) {
+                          this.currentTrickHighestCard.player = playerIndex;
+                          this.currentTrickHighestCard.card = index;
+                          this.players.forEach(p => {
+                              if (p.currentCard) {
+                                  p.currentCard.winning = false;
+                              }
+                          });
+                          this.players[playerIndex].currentCard.winning = true;
+                      }
+                      
+                      this.isPlayingCard = false;
                       this.reloadPlayers();
-
-                      this.sleep().then(() => { console.log('currentCard: ' + currentCard);
-                        this.players[playerIndex].currentCard = currentCard;
-                        if (!this.players[playerIndex].currentCard) {
-                          this.showToastError('cagosetudo');
-                        }
-
-                          console.log('teste5');
-                          console.log('playerIndex: ' + playerIndex);
-                          console.log('index: ' + index);
-                          console.log('this.players[playerIndex].name: ' + this.players[playerIndex].name);
-                          console.log('this.players.length: ' + this.players.length);
-                          console.log('this.players[playerIndex].currentCard: ' + this.players[playerIndex].currentCard);
-                          //this.players[playerIndex].currentCard = currentCard;
-                          //console.log('this.players[playerIndex].currentCard: ' + this.players[playerIndex].currentCard);
-
-                          if (this.currentTrickHighestCard.card === null 
-                              || this.players[playerIndex].currentCard.power > this.players[this.currentTrickHighestCard.player].currentCard.power) {
-                              this.currentTrickHighestCard.player = playerIndex;
-                              this.currentTrickHighestCard.card = index;
-                              this.players.forEach(p => {
-                                  if (p.currentCard) {
-                                      p.currentCard.winning = false;
-                                  }
-                              });
-                              this.players[playerIndex].currentCard.winning = true;
-                          }
-                          
-                          this.isPlayingCard = false;
-                          this.reloadPlayers();
-                          
-                          if (this.players.filter(p => p.currentCard !== null).length >= this.players.filter(p => p.isPlaying).length) {
-                              this.findWinners();
-                          } else {
-                              this.passToNextPlayingPlayer();
-                          }
-                      });
+                      
+                      if (this.players.filter(p => p.currentCard !== null).length >= this.players.filter(p => p.isPlaying).length) {
+                          this.findWinners();
+                      } else {
+                          this.passToNextPlayingPlayer();
+                      }
                     });
+                  });
                 },
-                findWinners() { console.log('findWinners');
+                findWinners() {
                     this.lastWinner = this.currentTrickHighestCard.player;
                     this.winners = [this.currentTrickHighestCard.player];
-                    console.log('teste30');
+                    
                     for (let i = 0; i < this.players.length; i++) {
                         let p = this.players[i];
 
@@ -1227,7 +1206,7 @@
                             this.winners.push(i);
                         }
                     }
-                    console.log('teste31');
+                    
                     if (this.winners.length > 1) {
                         let winnersString = '';
                         for (let i = 0; i < this.winners.length; i++) {
@@ -1246,15 +1225,15 @@
                     } else {
                         this.showToast(this.players[this.currentTrickHighestCard.player ].name + ' venceu a rodada');
                     }
-                    console.log('teste32');
+                    
                     this.winners.forEach(w => {
                         this.players[w].currentTurnPoints++;
-                    }); console.log('teste33');
-                    this.sleep(4).then(() => { console.log('teste34');                      
+                    });
+                    this.sleep(4).then(() => {                      
                         this.goToNextTrick();
                     });
                 },
-                applyPoints() { console.log('teste38');
+                applyPoints() {
                     let lowestPoint = 0;
 
                     for (let i = 0; i < this.players.length; i++) {
@@ -1276,13 +1255,13 @@
                             }
                         }
                     }
-                    console.log('teste39');
-                    let gameWinners = this.players.filter(p => p.points === lowestPoint); console.log('teste40');
-                    if (gameWinners.length === 1) { console.log('teste41');
+                    
+                    let gameWinners = this.players.filter(p => p.points === lowestPoint);
+                    if (gameWinners.length === 1) {
                         this.showToast(gameWinners[0].name + ' venceu a partida');
                         this.winner = gameWinners[0];
                         this.gameStarted = false;
-                    } else { console.log('teste42');
+                    } else {
                         this.goToNextTurn();
                     }
                 },
@@ -1744,15 +1723,14 @@
                         }
                         case 'playCard': {
                           if (data.data.playerId !== this.playerId) {
-                            console.log('data.data.playerId: ' + data.data.playerId);
                             let index = this.players.findIndex(p => p.id === data.data.playerId);
 
-                            if (!this.isMultiplayerGameAndIAmTheRoomMaster || !this.players[index].com) { console.log('teste1');
-                              if (this.isPlayingCard) { console.log('teste2');
-                                this.sleep(2).then(() => { console.log('teste10');
+                            if (!this.isMultiplayerGameAndIAmTheRoomMaster || !this.players[index].com) {
+                              if (this.isPlayingCard) {
+                                this.sleep(2).then(() => {
                                   this.playCard(data.data.index, index);
                                 });
-                              } else { console.log('teste3');
+                              } else {
                                 this.playCard(data.data.index, index);
                               }
                             }
