@@ -15,26 +15,34 @@
         <div v-if="currentPage === 'menu'">
             <div class="center-div">
                 <div class="inner-center-div">
-                    <div class="row justify-content-center">
-                        <div class="form-group col-auto">
-                            <label for="nicknameInput">Apelido</label>
-                            <input type="text" class="form-control" id="nicknameInput" maxlength="10"
-                            placeholder="Digite um apelido" v-model="nickname">
-                        </div>
-                    </div>
-                    <div class="row justify-content-center">
-                        <button @click="goToPage('game')" type="button" 
-                            class="btn btn-secondary col-auto"
-                            :disabled="!nickname || nickname.length < 3 || nickname.length > 10">
-                            Um jogador
+                    <div v-if="isScreenPortrait" class="row justify-content-center">
+                        <button @click="reloadPage()" type="button" 
+                            class="btn btn-primary col-auto">
+                            Recarregar
                         </button>
                     </div>
-                    <div class="row justify-content-center mt-3">
-                        <button @click="goToPage('lobby')" type="button" 
-                            class="btn btn-secondary col-auto"
-                            :disabled="!nickname || nickname.length < 3 || nickname.length > 10">
-                            Multijogador
-                        </button>
+                    <div v-else>
+                      <div class="row justify-content-center">
+                          <div class="form-group col-auto">
+                              <label for="nicknameInput">Apelido</label>
+                              <input type="text" class="form-control" id="nicknameInput" maxlength="10"
+                              placeholder="Digite um apelido" v-model="nickname">
+                          </div>
+                      </div>
+                      <div class="row justify-content-center">
+                          <button @click="goToPage('game')" type="button" 
+                              class="btn btn-secondary col-auto"
+                              :disabled="!nickname || nickname.length < 3 || nickname.length > 10">
+                              Um jogador
+                          </button>
+                      </div>
+                      <div class="row justify-content-center mt-3">
+                          <button @click="goToPage('lobby')" type="button" 
+                              class="btn btn-secondary col-auto"
+                              :disabled="!nickname || nickname.length < 3 || nickname.length > 10">
+                              Multijogador
+                          </button>
+                      </div>
                     </div>
                 </div>
             </div>
@@ -450,21 +458,31 @@
                 isMultiplayerGameAndIAmTheRoomMaster: false,
                 isPlayingCard: false,
                 chatMessage: null,
-                chatMessageEnabled: true
+                chatMessageEnabled: true,
+                isScreenPortrait: false
             },
             mounted() {
-                this.window = window;
-                this.playerId = this.getUUID();
-                this.setCardSize();
-                this.setSound();
-                this.generateCards();
-                
-                let nickname = localStorage.getItem('nickname');
-                if (nickname && nickname.length) {
-                    this.nickname = nickname;
-                }
+                this.reloadPage();
             },
             methods: {
+                reloadPage() {
+                  this.window = window;
+                  this.isScreenPortrait = window.innerWidth < window.innerHeight;
+                  
+                  if (this.isScreenPortrait) {
+                    this.showToastError('Por favor mude a orientação da tela para paisagem e clique em recarregar');
+                  } else {
+                    this.playerId = this.getUUID();
+                    this.setCardSize();
+                    this.setSound();
+                    this.generateCards();
+                    
+                    let nickname = localStorage.getItem('nickname');
+                    if (nickname && nickname.length) {
+                        this.nickname = nickname;
+                    }
+                  }
+                },
                 generateCards() {
                     Object.values(this.suits).forEach(s => {
                         for (let i = 0; i < this.ranks.length; i++) {
