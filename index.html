@@ -55,6 +55,11 @@
             </div>
         </div>
 
+        <p v-if="currentPage === 'howtoplay'" class="text-center">
+          <img :src="'assets/img/how-to-play/how-to-play-' + (howToPlayIndex + 1) + '.png'"
+              class="col-auto" :height="window.innerHeight * 0.9">
+        </p>
+
         <div v-if="currentPage === 'lobby'">
           <div class="card m-3">
             <div class="card-header mobile-hide">
@@ -310,6 +315,16 @@
             </div>
         </div>
 
+        <button v-if="currentPage === 'menu' && !isScreenPortrait && (!isMobile || requestFullScreenButtonPressed)" 
+          @click="goToPage('howtoplay')" type="button" class="btn btn-info col-auto" id="how-to-play-button">
+          Como jogar
+        </button>
+
+        <button v-if="currentPage === 'howtoplay'" id="next-how-to-play-button" type="button" 
+          class="btn btn-primary" @click="goToNextHowToPlay()">
+          Próximo
+        </button>
+
         <button v-if="currentPage !== 'menu'" id="back-button" type="button" class="btn btn-secondary" @click="goBack()">
           Voltar
         </button>
@@ -444,7 +459,8 @@
                     'menu',
                     'game',
                     'lobby',
-                    'room'
+                    'room',
+                    'howtoplay'
                 ],
                 currentPage: 'menu',
                 nickname: '',
@@ -470,7 +486,8 @@
                 isMobile: false,
                 requestFullScreenButtonPressed: false,
                 windowHeight: 768,
-                playerCardHeight: 0
+                playerCardHeight: 0,
+                howToPlayIndex: 0
             },
             mounted() {
                 this.playerId = this.getUUID();
@@ -1484,6 +1501,15 @@
 
                         break;
                       }
+                      case 'howtoplay': {
+                        if (this.howToPlayIndex > 0) {
+                          this.howToPlayIndex--;
+                        } else {
+                          this.currentPage = 'menu';
+                        }
+
+                        break;
+                      }
                     }
 
                     this.handleCurrentPage();
@@ -1491,6 +1517,7 @@
                 handleCurrentPage() {
                     switch (this.currentPage) {
                         case 'menu': {
+                            this.howToPlayIndex = 0;
                             this.currentRoom = null;
 
                             break;
@@ -1920,6 +1947,15 @@
                 requestFullScreen() {
                   this.requestFullScreenButtonPressed = true;
                   document.documentElement.webkitRequestFullScreen();
+                },
+                goToNextHowToPlay() {
+                  this.playSound();
+
+                  if (this.howToPlayIndex < 4) {
+                    this.howToPlayIndex++;
+                  } else {
+                    this.goToPage('menu');
+                  }                  
                 }
             },
             computed: {
