@@ -1387,7 +1387,7 @@
                     };
 
                     if (window.innerWidth > 850) {
-                      options.stack = 10;
+                      options.stack = 5;
                       options.hideAfter = this.sleepInterval * 15;
                     } else {                      
                       options.stack = 2;
@@ -1527,6 +1527,7 @@
                         case 'menu': {
                             this.howToPlayIndex = 0;
                             this.currentRoom = null;
+                            this.roomsSearched = false;
 
                             break;
                         }
@@ -1544,6 +1545,7 @@
                           this.isMultiplayerGameAndIAmTheRoomMaster = false;
                           this.rooms = [];
                           this.currentRoom = null;
+                          this.roomsSearched = false;
                           this.getSocket();
 
                           break;
@@ -1756,6 +1758,8 @@
                         console.error(e);
                       }
                     });
+                  } else {
+                    this.getRooms();
                   }
 
                   return this.socket;
