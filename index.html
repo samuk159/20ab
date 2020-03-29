@@ -99,8 +99,7 @@
                     </span>
                   </div>
                   <div class="col">
-                    <button type="button" class="btn btn-primary" @click="enterRoom(room)"
-                        :disabled="!room.players || room.players.length >= 4 || room.inGame">Entrar</button>
+                    <button type="button" class="btn btn-primary" @click="enterRoom(room)">Entrar</button>
                   </div>
                 </div>
               </div>
@@ -490,7 +489,14 @@
                 howToPlayIndex: 0
             },
             mounted() {
-                this.playerId = this.getUUID();
+                /*let playerId = localStorage.getItem('playerId');
+                if (playerId && playerId.length) {
+                  this.playerId = playerId;
+                } else {*/
+                  this.playerId = this.getUUID();
+                  /*localStorage.setItem('playerId', this.playerId);
+                }*/
+                
                 this.setSound();
                 this.generateCards();
                 
@@ -554,10 +560,7 @@
 
                   if (this.currentRoom) {
                     this.gameSpeed = 500;
-
-                    this.socket.on(this.currentRoom.id, data => {
-                      this.handleCurrentRoomEvent(data);
-                    });
+                    this.listenToRoomChannel();
 
                     if (this.currentRoom && this.currentRoom.players && this.currentRoom.players.length) {
                       let player = this.currentRoom.players.find(p => p.isRoomMaster);
@@ -599,6 +602,11 @@
                     this.setComPlayersRandomNames();
                     this.goToNextTurn();
                   }              
+                },
+                listenToRoomChannel() {
+                  this.socket.on(this.currentRoom.id, data => {
+                    this.handleCurrentRoomEvent(data);
+                  });
                 },
                 goToNextTurn() {
                     this.playSound();
@@ -1557,25 +1565,50 @@
                   });
                 },
                 enterRoom(room) {
-                  this.currentRoom = room;
                   let newPlayer = {
                     id: this.playerId,
                     name: this.nickname,
                     com: false
                   };
 
-                  let index = this.currentRoom.players.findIndex(p => p.id === this.playerId);
-                  if (index > -1) {
-                    this.currentRoom.players[index] = newPlayer;
-                  } else {
-                    this.currentRoom.players.push(newPlayer);
+                  let index = room.players.findIndex(p => p.id === this.playerId);
+                  if (index === -1) {
+                    if (room.inGame) {
+                      this.showToastError('Não é possível entrar em partidas em execução');
+                      return;
+                    } else if (room.players && room.players.length >= 4) {
+                      this.showToastError('Esta sala já esta cheia');
+                      return;
+                    } else {
+                      room.players.push(newPlayer);
+                    }
                   }
                   
-                  this.goToPage('room');
+                  this.currentRoom = room;
                   this.sendEvent({
                     channel: 'roomUpdate',
                     message: this.currentRoom
                   });
+
+                  if (this.currentRoom.inGame) {
+                    this.playSound();
+                    this.currentPage = 'game';
+
+                    /*this.winners = [];
+                    this.isPlayingCard = false;
+                    this.players = this.currentRoom.players;
+
+                    this.listenToRoomChannel();
+                    this.sendEvent({
+                      channel: this.currentRoom.id,
+                      message: {
+                        action: 'getGameInfo',
+                        data: this.playerId
+                      }
+                    });*/
+                  } else {
+                    this.goToPage('room');
+                  }                 
                 },
                 getRooms() {
                   if (!this.roomsSearched) {
@@ -1672,7 +1705,6 @@
                       try {
                         if (data.id 
                             && this.currentRoom 
-                            && !this.currentRoom.inGame
                             && this.currentRoom.players
                             && this.currentRoom.players.length 
                             && this.currentRoom.players[0].id === this.playerId) {
@@ -1888,6 +1920,73 @@
 
                           break;
                         }
+                        /*case 'getGameInfo': {
+                          if (data.data !== this.playerId) {
+                            let cont = false;
+
+                            if (this.isMultiplayerGameAndIAmTheRoomMaster) {
+                              cont = true;
+                            } else {
+                              let index = this.players.findIndex(p => p.id === data.data);
+                              cont = index > -1 && this.players[index].isRoomMaster;
+                            }
+
+                            if (cont) {
+                              this.sendEvent({
+                                channel: this.currentRoom.id,
+                                message: {
+                                  action: 'getGameInfoReturn',
+                                  data: {
+                                    playerId: data.data,
+                                    roomInfo: {
+                                      players: this.players,
+                                      currentTrick: this.currentTrick,
+                                      currentTrumpSuitChoicePlayerId: this.players[this.currentTrumpSuitChoicePlayerIndex].id,
+                                      currentPlayerId: this.players[this.currentPlayerIndex].id,
+                                      currentPhaseIndex: this.currentPhaseIndex,
+                                      trumpSuitIndex: this.trumpSuitIndex,
+                                      turn: this.turn,
+                                      currentTrickHighestCard: this.currentTrickHighestCard,
+                                      gameStarted: this.gameStarted,
+                                      lastWinnerId: this.lastWinner !== null ? this.players[this.lastWinner].id : null
+                                    }
+                                  }
+                                }
+                              });
+                            }
+                          }
+
+                          break;
+                        }
+                        case 'getGameInfoReturn': {
+                          if (data.data.playerId === this.playerId) {
+                            this.players = this.convertRemotePlayers(data.data.roomInfo.players);
+                            this.currentTrick = data.data.roomInfo.currentTrick;
+                            this.currentTrumpSuitChoicePlayerIndex = this.players.findIndex(p => {
+                              return p.id === data.data.roomInfo.currentTrumpSuitChoicePlayerId
+                            });
+                            this.currentPlayerIndex = this.players.findIndex(p => {
+                              return p.id === data.data.roomInfo.currentPlayerId
+                            });
+                            this.currentPhaseIndex = data.data.roomInfo.currentPhaseIndex;
+                            this.trumpSuitIndex = data.data.roomInfo.trumpSuitIndex;
+                            this.turn = data.data.roomInfo.turn;
+                            this.currentTrickHighestCard = data.data.roomInfo.currentTrickHighestCard;
+                            this.gameStarted = data.data.roomInfo.gameStarted;
+
+                            if (data.data.roomInfo.lastWinnerId !== null) {
+                              this.lastWinner = this.players.findIndex(p => {
+                                return p.id === data.data.roomInfo.lastWinnerId
+                              });
+                            } else {
+                              this.lastWinner = null;
+                            }
+
+                            this.reloadPlayers();
+                          }
+
+                          break;
+                        }*/
                       }
                     }
                   } catch (e) {
