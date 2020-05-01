@@ -82,6 +82,7 @@ body {
 #chat-message-input {
   position: absolute;
   bottom: 5px;
+  width: 180px;
 }
 
 @media (min-width: 1025px) and (max-width: 1359px) {

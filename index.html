@@ -138,7 +138,10 @@
                 class="card-footer">
               <div class="row justify-content-end">
                 <div class="col-auto">
-                  <button type="button" class="btn btn-primary" @click="startCurrentRoom()">Iniciar partida</button>
+                  <button type="button" class="btn btn-primary" @click="startCurrentRoom()"
+                    :disabled="currentRoom.players.length < 2">
+                    Iniciar partida
+                  </button>
                 </div>
               </div>
             </div>
@@ -337,7 +340,8 @@
             </div>
 
             <div v-if="currentRoom && chatMessageEnabled" class="form-group mb-0" id="chat-message-input">
-              <input type="text" class="form-control" v-model="chatMessage" @keyup.enter="sendChatMessage()" maxlength="100">
+              <input type="text" class="form-control" v-model="chatMessage" @keyup.enter="sendChatMessage()" 
+                maxlength="100">
             </div>
         </div>
 
@@ -513,7 +517,10 @@
                 requestFullScreenButtonPressed: false,
                 windowHeight: 768,
                 playerCardHeight: 0,
-                howToPlayIndex: 0
+                howToPlayIndex: 0,
+                myEvents: [],
+                processedEvents: [],
+                pendingEvents: []
             },
             mounted() {
                 /*let playerId = localStorage.getItem('playerId');
@@ -582,7 +589,6 @@
 
                   if (this.currentRoom) {
                     this.gameSpeed = 500;
-                    this.listenToRoomChannel();
 
                     if (this.currentRoom && this.currentRoom.players && this.currentRoom.players.length) {
                       let player = this.currentRoom.players.find(p => p.isRoomMaster);
@@ -597,9 +603,13 @@
 
                       if (firstRoomMatch) {
                         this.sendEvent({
-                          channel: 'roomUpdate',
-                          message: this.currentRoom
+                          channel: this.currentRoom.id,
+                          message: {
+                            action: 'gameStart',
+                            data: this.currentRoom
+                          }
                         });
+                        this.listenToRoomChannel();
                       }
 
                       this.players = this.currentRoom.players;
@@ -1564,6 +1574,9 @@
                             this.howToPlayIndex = 0;
                             this.currentRoom = null;
                             this.roomsSearched = false;
+                            this.myEvents = [];
+                            this.processedEvents = [];
+                            this.pendingEvents = [];
 
                             break;
                         }
@@ -1582,6 +1595,9 @@
                           this.rooms = [];
                           this.currentRoom = null;
                           this.roomsSearched = false;
+                          this.myEvents = [];
+                          this.processedEvents = [];
+                          this.pendingEvents = [];
                           this.getSocket();
 
                           break;
@@ -1623,6 +1639,7 @@
                   }
                   
                   this.currentRoom = room;
+                  this.listenToRoomChannel();
                   this.sendEvent({
                     channel: 'roomUpdate',
                     message: this.currentRoom
@@ -1766,11 +1783,6 @@
                                 this.addOrUpdateRoom(data);
                             } else if (this.currentPage === 'room' && data.id === this.currentRoom.id) {
                                 this.currentRoom = data;
-
-                                if (this.currentRoom.inGame) {
-                                  this.showToast(this.currentRoom.players[0].name + " iniciou a partida");
-                                  this.goToPage('game');
-                                }
                             }
                         }
                       } catch (e) {
@@ -1801,7 +1813,16 @@
                   return this.socket;
                 },
                 sendEvent(data) {
+                  if (data.message.data) {
+                    data.message.id = this.getUUID();
+                    data.message.confirmations = [];
+                  }
+
                   this.socket.emit('emit-event', JSON.stringify(data));
+                  
+                  if (data.message.data && data.message.action !== 'confirmation' && data.message.action !== 'chatMessage') {
+                    this.myEvents.push(data);
+                  }
                 },
                 addOrUpdateRoom(room) {
                     let index = this.rooms.findIndex(r => r.id === room.id);
@@ -1842,6 +1863,14 @@
                   try {
                     if (this.currentRoom && data && data.action) {
                       switch (data.action) {
+                        case 'gameStart': {
+                          if (data.data.players[0].id !== this.playerId) {
+                            this.currentRoom = data.data;
+                            this.showToast(this.currentRoom.players[0].name + " iniciou a partida");
+                            this.goToPage('game');
+                          }
+                          break;
+                        }
                         case 'firstDraw': {
                           if (!this.isMultiplayerGameAndIAmTheRoomMaster) {
                             let ctscpi = data.data.players[data.data.currentTrumpSuitChoicePlayerIndex].id;
@@ -1960,6 +1989,17 @@
 
                           break;
                         }
+                        case 'confirmation': {
+                          if (data.data.playerId !== this.playerId) {
+                            let index = this.myEvents.findIndex(e => e.message.id === data.data.eventId);
+
+                            if (index > -1 && !this.myEvents[index].message.confirmations.find(c => c === data.data.playerId)) {
+                              this.myEvents[index].message.confirmations.push(data.data.playerId);
+                            }
+                          }
+
+                          break;
+                        }
                         /*case 'getGameInfo': {
                           if (data.data !== this.playerId) {
                             let cont = false;
@@ -2028,10 +2068,27 @@
                           break;
                         }*/
                       }
+
+                      if (data.action !== 'confirmation' && data.action !== 'chatMessage' && 
+                        !this.myEvents.find(e => e.message.id === data.id)) {
+                        this.sendEventConfirmation(data.id);
+                      }
                     }
                   } catch (e) {
                     console.error(e);
                   }
+                },
+                sendEventConfirmation(eventId) {
+                  this.sendEvent({
+                    channel: this.currentRoom.id,
+                    message: {
+                      action: 'confirmation',
+                      data: {
+                        eventId: eventId,
+                        playerId: this.playerId
+                      }
+                    }
+                  });
                 },
                 convertRemotePlayers(remotePlayers) {
                   let index = remotePlayers.findIndex(p => p.id === this.playerId);
