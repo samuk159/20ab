@@ -140,6 +140,14 @@ body {
     font-size: 7px !important;
     margin-bottom: 0px !important;
   }
+
+  #player0-cards {
+    bottom: 46px;
+  }
+
+  .mobile-full-width {
+    width: 100vw;
+  }
 }
 
 @media (min-width: 851px) {
@@ -166,4 +174,11 @@ body {
   position: absolute;
   right: 5px;
   bottom: 5px;
+}
+
+#mobile-header {
+  position: absolute;
+  width: 100vw;
+  top: 0px;
+  left: 0px;
 }
