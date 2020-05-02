@@ -581,7 +581,7 @@
                         }
                     });
                 },
-                startGame() {
+                startGame() { //debugger;
                   let firstRoomMatch = !this.winner;
                   this.winner = null;
                   this.players.forEach(p => {
@@ -599,7 +599,7 @@
                     });
                   }
 
-                  if (this.currentRoom) {
+                  if (this.currentRoom) { //debugger;
                     this.gameSpeed = 500;
 
                     if (this.currentRoom && this.currentRoom.players && this.currentRoom.players.length) {
@@ -608,12 +608,12 @@
                       this.isMultiplayerGameAndIAmTheRoomMaster = player && player.id === this.playerId;
                     }
                     
-                    if (this.isMultiplayerGameAndIAmTheRoomMaster) {
+                    if (this.isMultiplayerGameAndIAmTheRoomMaster) { //debugger;
                       this.gameStarted = true;
                       this.currentTrumpSuitChoicePlayerIndex = this.getRandomArbitrary(0, 3);
                       this.currentRoom.inGame = true;
 
-                      if (firstRoomMatch) {
+                      if (firstRoomMatch) { //debugger;
                         this.sendEvent({
                           channel: this.currentRoom.id,
                           message: {
@@ -649,19 +649,21 @@
                 },
                 listenToRoomChannel() {
                   this.socket.on(this.currentRoom.id, data => { // Remover após testado
+                    if (data.action === 'confirmation') {
+                      //debugger;
+                    }
+
                     if (this.getRandomArbitrary(1, 3) !== 1) {
-                      console.log('processing event ' + data.id + ' - ' + (data.message ? data.message.action : ''));
+                      //console.log('processing event ' + data.id + ' - ' + (data.message ? data.message.action : ''));
                       this.handleCurrentRoomEvent(data);
                     } else {
-                      console.log('processing event ' + data.id + ' - ' + (data.message ? data.message.action : ''));
+                      //console.log('ignoring event ' + data.id + ' - ' + (data.message ? data.message.action : ''));
                     }
                   });
                 },
                 goToNextTurn() {
                     this.processedEventActions = [];
-                    this.myEvents = [];
                     this.processedEvents = [];
-                    this.pendingEvents = [];
                     this.playSound();
 
                     if (!this.currentRoom || this.isMultiplayerGameAndIAmTheRoomMaster) {
@@ -1852,7 +1854,7 @@
                 sendEvent(data) {
                   let isNewEvent = false;
 
-                  if (data.message.data && !data.message.id) {
+                  if (data.message.data !== null && data.message.data !== undefined && !data.message.id) {
                     isNewEvent = true;
                     data.message.id = this.getUUID();
                     data.message.createdAt = new Date().getTime();
@@ -1861,7 +1863,7 @@
 
                   this.socket.emit('emit-event', JSON.stringify(data));
                   
-                  if (isNewEvent && data.message.action !== 'confirmation' && data.message.action !== 'chatMessage') {
+                  if (isNewEvent && data.message.action !== 'chatMessage') { //debugger;
                     this.myEvents.push(data);
                   }
                 },
@@ -1901,251 +1903,281 @@
                   this.goToPage('game');
                 },
                 handleCurrentRoomEvent(data) {
-                  console.log('entrou em handleCurrentRoomEvent');
+                  /*console.log('entrou em handleCurrentRoomEvent');
                   console.log('this.currentRoom: ' + this.currentRoom);
                   console.log('data: ' + data);
                   console.log('data.action: ' + data.action);
                   console.log('data.id: ' + data.id);
                   console.log('this.myEvents.find(e => e.message.id === data.id): ' + this.myEvents.find(e => e.message.id === data.id));
-                  console.log('this.processedEvents.find(e => e.message.id === data.id): ' + this.processedEvents.find(e => e.message.id === data.id));
+                  console.log('this.processedEvents.find(e => e.message.id === data.id): ' + this.processedEvents.find(e => e.message.id === data.id));*/
 
                   try {
                     if (this.currentRoom && data && data.action 
-                      && !this.myEvents.find(e => e.message.id === data.id)
-                      && !this.processedEvents.find(e => e.message.id === data.id)) {
-                      if (this.checkDependenciesSatisfied(data)) { debugger;
-                        console.log('entrou antes do switch');
-                        switch (data.action) {
-                          case 'gameStart': {
-                            if (data.data.players[0].id !== this.playerId) {
-                              this.currentRoom = data.data;
-                              this.showToast(this.currentRoom.players[0].name + " iniciou a partida");
-                              this.goToPage('game');
-                            }
-                            break;
-                          }
-                          case 'firstDraw': {
-                            if (!this.isMultiplayerGameAndIAmTheRoomMaster) {
-                              let ctscpi = data.data.players[data.data.currentTrumpSuitChoicePlayerIndex].id;
-                              let tempPlayers = this.convertRemotePlayers(data.data.players);
-
-                              this.currentTrumpSuitChoicePlayerIndex = tempPlayers.findIndex(p => p.id === ctscpi);
-                              this.showToast(tempPlayers[this.currentTrumpSuitChoicePlayerIndex].name + ' irá escolher o nipe trunfo');
-                              this.currentPlayerIndex = this.currentTrumpSuitChoicePlayerIndex;
-
-                              let players = JSON.parse(JSON.stringify(tempPlayers));
-                              players.forEach(p => {
-                                p.cardsInHand = [];
-                              });
-                              this.players = players;
-
-                              this.applyFirstDrawTempPlayersCards(tempPlayers);
-                              this.gameStarted = true;
-                            }
-
-                            break;
-                          }
-                          case 'selectTrumpSuit': {
-                            if (this.players[this.currentTrumpSuitChoicePlayerIndex].id !== this.playerId && (
-                              !this.isMultiplayerGameAndIAmTheRoomMaster || !this.players[this.currentTrumpSuitChoicePlayerIndex].com
-                            )) {
-                              this.selectTrumpSuit(data.data);
-                            }
-
-                            break;
-                          }
-                          case 'secondDraw': {
-                            if (!this.isMultiplayerGameAndIAmTheRoomMaster) {
-                              this.applySecondDrawTempPlayersCards(this.convertRemotePlayers(data.data));
-                            }
-
-                            break;
-                          }
-                          case 'exchangeCardsSelected': {
-                            if (this.isMultiplayerGameAndIAmTheRoomMaster && data.data.playerId !== this.playerId) {
-                              let index = this.players.findIndex(p => p.id === data.data.playerId);
-                              this.players[index].cardsInHand = data.data.cardsInHand;
-                              this.players[index].exchangeCardsSelected = true;
-                              this.verifyIfAllPlayersSelectedTheirExchangeCards();
-                            }
-
-                            break;
-                          }
-                          case 'exchangedCards': {
-                            if (!this.isMultiplayerGameAndIAmTheRoomMaster) {
-                              this.applyMultiplayerSelectedExchangeCards(this.convertRemotePlayers(data.data));
-                            }
-
-                            break;
-                          }
-                          case 'playOrPassSelected': {
-                            if (data.data.playerId !== this.playerId) {
-                              let index = this.players.findIndex(p => p.id === data.data.playerId);
-                              this.players[index].isPlaying = data.data.isPlaying;
-                              this.players[index].playOrPassSelected = true;
-
-                              if (this.isMultiplayerGameAndIAmTheRoomMaster) {
-                                this.verifyIfAllPlayersSelectedPlayOrPass();
+                      && !this.myEvents.find(e => e.message.id === data.id)) {
+                      if (this.checkDependenciesSatisfied(data)) { //debugger;
+                        //console.log('entrou antes do switch');
+                        if (!this.processedEvents.find(e => e.message.id === data.id)) {
+                          switch (data.action) {
+                            case 'gameStart': {
+                              if (data.data.players[0].id !== this.playerId) {
+                                this.currentRoom = data.data;
+                                this.showToast(this.currentRoom.players[0].name + " iniciou a partida");
+                                this.goToPage('game');
                               }
+                              break;
                             }
+                            case 'firstDraw': {
+                              if (!this.isMultiplayerGameAndIAmTheRoomMaster) {
+                                let ctscpi = data.data.players[data.data.currentTrumpSuitChoicePlayerIndex].id;
+                                let tempPlayers = this.convertRemotePlayers(data.data.players);
 
-                            break;
-                          }
-                          case 'allPlayersSelectedPlayOrPass': {
-                            if (!this.isMultiplayerGameAndIAmTheRoomMaster) {
-                              let tempPlayers = this.convertRemotePlayers(data.data);
+                                this.currentTrumpSuitChoicePlayerIndex = tempPlayers.findIndex(p => p.id === ctscpi);
+                                this.showToast(tempPlayers[this.currentTrumpSuitChoicePlayerIndex].name + ' irá escolher o nipe trunfo');
+                                this.currentPlayerIndex = this.currentTrumpSuitChoicePlayerIndex;
 
-                              for (let i = 0; i < this.players.length; i++) {
-                                this.players[i].isPlaying = tempPlayers[i].isPlaying;
-                                this.showToast(this.players[i].name + ' decidiu ' + (this.players[i].isPlaying ? ' jogar' : ' passar'));
+                                let players = JSON.parse(JSON.stringify(tempPlayers));
+                                players.forEach(p => {
+                                  p.cardsInHand = [];
+                                });
+                                this.players = players;
+
+                                this.applyFirstDrawTempPlayersCards(tempPlayers);
+                                this.gameStarted = true;
                               }
 
-                              this.goToNextPhase();
+                              break;
                             }
+                            case 'selectTrumpSuit': {
+                              if (this.players[this.currentTrumpSuitChoicePlayerIndex].id !== this.playerId && (
+                                !this.isMultiplayerGameAndIAmTheRoomMaster || !this.players[this.currentTrumpSuitChoicePlayerIndex].com
+                              )) {
+                                this.selectTrumpSuit(data.data);
+                              }
 
-                            break;
-                          }
-                          case 'playCard': {
-                            console.log('entrou em case playCard');
-                            if (data.data.playerId !== this.playerId) { console.log('teste1');
-                              let index = this.players.findIndex(p => p.id === data.data.playerId);
+                              break;
+                            }
+                            case 'secondDraw': {
+                              if (!this.isMultiplayerGameAndIAmTheRoomMaster) {
+                                this.applySecondDrawTempPlayersCards(this.convertRemotePlayers(data.data));
+                              }
 
-                              if (!this.isMultiplayerGameAndIAmTheRoomMaster || !this.players[index].com) { debugger;
-                                console.log('teste2');
-                                console.log('this.currentPlayerIndex:' + this.currentPlayerIndex);
-                                console.log('index:' + index);
-                                console.log('this.currentTrick:' + this.currentTrick);
-                                console.log('data.data.trick:' + data.data.trick);
+                              break;
+                            }
+                            case 'exchangeCardsSelected': {
+                              if (this.isMultiplayerGameAndIAmTheRoomMaster && data.data.playerId !== this.playerId) {
+                                let index = this.players.findIndex(p => p.id === data.data.playerId);
+                                this.players[index].cardsInHand = data.data.cardsInHand;
+                                this.players[index].exchangeCardsSelected = true;
+                                this.verifyIfAllPlayersSelectedTheirExchangeCards();
+                              }
 
-                                if (this.currentPlayerIndex === index && this.currentTrick === data.data.trick) { 
-                                  console.log('teste3');
-                                  debugger;
-                                  if (this.isPlayingCard) {
-                                    this.sleep(2).then(() => {
-                                      this.playCard(data.data.index, index);
-                                    });
-                                  } else {
-                                    this.playCard(data.data.index, index);
-                                  }
-                                } else if (!this.pendingEvents.find(e => e.message.id === data.id)) { debugger;
-                                  console.log('teste4');
-                                  this.pendingEvents.push({ message: data });
-                                  return;
+                              break;
+                            }
+                            case 'exchangedCards': {
+                              if (!this.isMultiplayerGameAndIAmTheRoomMaster) {
+                                this.applyMultiplayerSelectedExchangeCards(this.convertRemotePlayers(data.data));
+                              }
+
+                              break;
+                            }
+                            case 'playOrPassSelected': {
+                              if (data.data.playerId !== this.playerId) {
+                                let index = this.players.findIndex(p => p.id === data.data.playerId);
+                                this.players[index].isPlaying = data.data.isPlaying;
+                                this.players[index].playOrPassSelected = true;
+
+                                if (this.isMultiplayerGameAndIAmTheRoomMaster) {
+                                  this.verifyIfAllPlayersSelectedPlayOrPass();
                                 }
                               }
-                            }
 
-                            break;
-                          }
-                          case 'gameRestart': {
-                            if (!this.isMultiplayerGameAndIAmTheRoomMaster) {
-                              this.winner = null;
-                              this.gameStarted = true;
-                              this.players.forEach(p => {
-                                p.points = 20;
+                              break;
+                            }
+                            case 'allPlayersSelectedPlayOrPass': {
+                              if (!this.isMultiplayerGameAndIAmTheRoomMaster) {
+                                let tempPlayers = this.convertRemotePlayers(data.data);
+
+                                for (let i = 0; i < this.players.length; i++) {
+                                  this.players[i].isPlaying = tempPlayers[i].isPlaying;
+                                  this.showToast(this.players[i].name + ' decidiu ' + (this.players[i].isPlaying ? ' jogar' : ' passar'));
+                                }
+
+                                this.goToNextPhase();
+                              }
+
+                              break;
+                            }
+                            case 'playCard': {
+                              //console.log('entrou em case playCard');
+                              if (data.data.playerId !== this.playerId) { console.log('teste1');
+                                let index = this.players.findIndex(p => p.id === data.data.playerId);
+
+                                if (!this.isMultiplayerGameAndIAmTheRoomMaster || !this.players[index].com) { debugger;
+                                  console.log('teste2');
+                                  console.log('this.currentPlayerIndex:' + this.currentPlayerIndex);
+                                  console.log('index:' + index);
+                                  console.log('this.currentTrick:' + this.currentTrick);
+                                  console.log('data.data.trick:' + data.data.trick);
+                                  console.log('this.players[index].name: ' + this.players[index].name);
+
+                                  if (this.currentPlayerIndex === index && this.currentTrick === data.data.trick) { 
+                                    console.log('teste3');
+                                    debugger;
+                                    if (this.isPlayingCard) {
+                                      this.sleep(2).then(() => {
+                                        this.playCard(data.data.index, index);
+                                      });
+                                    } else {
+                                      this.playCard(data.data.index, index);
+                                    }
+                                  } else /*if (!this.pendingEvents.find(e => e.message.id === data.id))*/ { debugger;
+                                    console.log('teste4');
+                                    //this.pendingEvents.push({ message: data });
+                                    return;
+                                  }
+                                }
+                              }
+
+                              break;
+                            }
+                            case 'gameRestart': {
+                              if (!this.isMultiplayerGameAndIAmTheRoomMaster) {
+                                this.winner = null;
+                                this.gameStarted = true;
+                                this.players.forEach(p => {
+                                  p.points = 20;
+                                });
+                              }
+
+                              break;
+                            }
+                            case 'chatMessage': {
+                              this.showToast(data.data.chatMessage, {
+                                heading: data.data.playerName + ' diz:',
+                                hideAfter: 15000,
+                                icon: 'info'
                               });
+
+                              break;
                             }
+                            case 'confirmation': {
+                              if (data.data.playerId !== this.playerId) {
+                                console.log('confirmation received');
 
-                            break;
-                          }
-                          case 'chatMessage': {
-                            this.showToast(data.data.chatMessage, {
-                              heading: data.data.playerName + ' diz:',
-                              hideAfter: 15000,
-                              icon: 'info'
-                            });
+                                let index = this.myEvents.findIndex(e => e.message.id === data.data.eventId);
 
-                            break;
-                          }
-                          case 'confirmation': {
-                            if (data.data.playerId !== this.playerId) {
-                              let index = this.myEvents.findIndex(e => e.message.id === data.data.eventId);
+                                if (index > -1) {
+                                  this.logEvent(this.myEvents[index]);
+                                }
 
-                              if (index > -1 && !this.myEvents[index].message.confirmations.find(c => c === data.data.playerId)) {
-                                this.myEvents[index].message.confirmations.push(data.data.playerId);
-                              }
-                            }
-
-                            break;
-                          }
-                          /*case 'getGameInfo': {
-                            if (data.data !== this.playerId) {
-                              let cont = false;
-
-                              if (this.isMultiplayerGameAndIAmTheRoomMaster) {
-                                cont = true;
-                              } else {
-                                let index = this.players.findIndex(p => p.id === data.data);
-                                cont = index > -1 && this.players[index].isRoomMaster;
+                                if (index > -1 && !this.myEvents[index].message.confirmations.find(c => c === data.data.playerId)) {
+                                  this.myEvents[index].message.confirmations.push(data.data.playerId);
+                                }
                               }
 
-                              if (cont) {
-                                this.sendEvent({
-                                  channel: this.currentRoom.id,
-                                  message: {
-                                    action: 'getGameInfoReturn',
-                                    data: {
-                                      playerId: data.data,
-                                      roomInfo: {
-                                        players: this.players,
-                                        currentTrick: this.currentTrick,
-                                        currentTrumpSuitChoicePlayerId: this.players[this.currentTrumpSuitChoicePlayerIndex].id,
-                                        currentPlayerId: this.players[this.currentPlayerIndex].id,
-                                        currentPhaseIndex: this.currentPhaseIndex,
-                                        trumpSuitIndex: this.trumpSuitIndex,
-                                        turn: this.turn,
-                                        currentTrickHighestCard: this.currentTrickHighestCard,
-                                        gameStarted: this.gameStarted,
-                                        lastWinnerId: this.lastWinner !== null ? this.players[this.lastWinner].id : null
+                              break;
+                            }
+                            /*case 'getGameInfo': {
+                              if (data.data !== this.playerId) {
+                                let cont = false;
+
+                                if (this.isMultiplayerGameAndIAmTheRoomMaster) {
+                                  cont = true;
+                                } else {
+                                  let index = this.players.findIndex(p => p.id === data.data);
+                                  cont = index > -1 && this.players[index].isRoomMaster;
+                                }
+
+                                if (cont) {
+                                  this.sendEvent({
+                                    channel: this.currentRoom.id,
+                                    message: {
+                                      action: 'getGameInfoReturn',
+                                      data: {
+                                        playerId: data.data,
+                                        roomInfo: {
+                                          players: this.players,
+                                          currentTrick: this.currentTrick,
+                                          currentTrumpSuitChoicePlayerId: this.players[this.currentTrumpSuitChoicePlayerIndex].id,
+                                          currentPlayerId: this.players[this.currentPlayerIndex].id,
+                                          currentPhaseIndex: this.currentPhaseIndex,
+                                          trumpSuitIndex: this.trumpSuitIndex,
+                                          turn: this.turn,
+                                          currentTrickHighestCard: this.currentTrickHighestCard,
+                                          gameStarted: this.gameStarted,
+                                          lastWinnerId: this.lastWinner !== null ? this.players[this.lastWinner].id : null
+                                        }
                                       }
                                     }
-                                  }
+                                  });
+                                }
+                              }
+
+                              break;
+                            }
+                            case 'getGameInfoReturn': {
+                              if (data.data.playerId === this.playerId) {
+                                this.players = this.convertRemotePlayers(data.data.roomInfo.players);
+                                this.currentTrick = data.data.roomInfo.currentTrick;
+                                this.currentTrumpSuitChoicePlayerIndex = this.players.findIndex(p => {
+                                  return p.id === data.data.roomInfo.currentTrumpSuitChoicePlayerId
                                 });
+                                this.currentPlayerIndex = this.players.findIndex(p => {
+                                  return p.id === data.data.roomInfo.currentPlayerId
+                                });
+                                this.currentPhaseIndex = data.data.roomInfo.currentPhaseIndex;
+                                this.trumpSuitIndex = data.data.roomInfo.trumpSuitIndex;
+                                this.turn = data.data.roomInfo.turn;
+                                this.currentTrickHighestCard = data.data.roomInfo.currentTrickHighestCard;
+                                this.gameStarted = data.data.roomInfo.gameStarted;
+
+                                if (data.data.roomInfo.lastWinnerId !== null) {
+                                  this.lastWinner = this.players.findIndex(p => {
+                                    return p.id === data.data.roomInfo.lastWinnerId
+                                  });
+                                } else {
+                                  this.lastWinner = null;
+                                }
+
+                                this.reloadPlayers();
+                              }
+
+                              break;
+                            }*/
+                          }                                               
+
+                          if (data.action !== 'chatMessage') {     
+                            if (!this.processedEventActions.includes(data.action)) {
+                              this.processedEventActions.push(data.action);
+                            }
+
+                            /*console.log('adding event to processedEvents')
+                            console.log('data.id: ' + data.id);
+                            console.log('data.data.playerId: ' + data.data.playerId);*/
+
+                            /*if (data.data.playerId !== null && data.data.playerId !== undefined) {
+                              let player = this.players.find(p => p.id === data.data.playerId);
+
+                              if (player) {
+                                console.log('player.name: ' + player.name);
                               }
                             }
 
-                            break;
-                          }
-                          case 'getGameInfoReturn': {
-                            if (data.data.playerId === this.playerId) {
-                              this.players = this.convertRemotePlayers(data.data.roomInfo.players);
-                              this.currentTrick = data.data.roomInfo.currentTrick;
-                              this.currentTrumpSuitChoicePlayerIndex = this.players.findIndex(p => {
-                                return p.id === data.data.roomInfo.currentTrumpSuitChoicePlayerId
-                              });
-                              this.currentPlayerIndex = this.players.findIndex(p => {
-                                return p.id === data.data.roomInfo.currentPlayerId
-                              });
-                              this.currentPhaseIndex = data.data.roomInfo.currentPhaseIndex;
-                              this.trumpSuitIndex = data.data.roomInfo.trumpSuitIndex;
-                              this.turn = data.data.roomInfo.turn;
-                              this.currentTrickHighestCard = data.data.roomInfo.currentTrickHighestCard;
-                              this.gameStarted = data.data.roomInfo.gameStarted;
+                            console.log('data: ' + data);*/
 
-                              if (data.data.roomInfo.lastWinnerId !== null) {
-                                this.lastWinner = this.players.findIndex(p => {
-                                  return p.id === data.data.roomInfo.lastWinnerId
-                                });
-                              } else {
-                                this.lastWinner = null;
-                              }
-
-                              this.reloadPlayers();
+                            if (!this.processedEvents.find(e => e.message.id === data.id)) {
+                              console.log('event processed: ');
+                              this.logEvent({ message: data });
+                              this.processedEvents.push({ message: data });
                             }
 
-                            break;
-                          }*/
-                        }                        
-
-                        if (data.action !== 'confirmation' && data.action !== 'chatMessage') {     
-                          if (!this.processedEventActions.includes(data.action)) {
-                            this.processedEventActions.push(data.action);
+                            if (data.action !== 'confirmation') { //debugger;
+                              console.log('sending confirmation');
+                              this.sendEventConfirmation(data.id);
+                            }
                           }
-
-                          this.processedEvents.push({ message: data });
-                          this.sendEventConfirmation(data.id);
                         }
-                      } else if (!this.pendingEvents.find(e => e.message.id === data.id)) { debugger;
+                      } else if (!this.pendingEvents.find(e => e.message.id === data.id)) { //debugger;
                         this.pendingEvents.push({ message: data });
                       }
                     }
@@ -2229,21 +2261,75 @@
                   }                  
                 },
                 startEventProcessingInterval() {
-                  if (this.eventProcessingIntervalId == null) {
+                  if (this.eventProcessingIntervalId == null) { //debugger;
                     this.myEvents = [];
                     this.processedEvents = [];
                     this.pendingEvents = [];
 
                     this.eventProcessingIntervalId = setInterval(() => {
+                      localStorage.setItem(this.nickname + '_' + 'myEvents', this.myEvents);
+                      localStorage.setItem(this.nickname + '_' + 'processedEvents', this.processedEvents);
+                      localStorage.setItem(this.nickname + '_' + 'pendingEvents', this.pendingEvents);
+
+                      //console.clear();
+                      console.log('unconfirmed events:');
+                      this.myEvents.filter(e => !e.message.confirmations.length && e.message.action !== 'confirmation').forEach(e => {
+                        this.logEvent(e);
+                      });
+
+                      /*console.log();
+                      console.log('processed events:');
+                      this.processedEvents.forEach(e => {
+                        let player = null;
+                        let card = null;
+
+                        if (e.message.data && e.message.data.playerId) {
+                          player = this.players.find(p => p.id === e.message.data.playerId);
+
+                          if (player && player.cardsInHand) {
+                            card = player.cardsInHand[e.message.data.index];
+                          }
+                        }
+
+                        console.log('       - ' + JSON.stringify({
+                          id: e.message.id,
+                          action: e.message.action,
+                          player: player ? player.name : '',
+                          card: card ? card.name : '',
+                        }, undefined, 4));
+                      });
+
+                      console.log();
+                      console.log('confirmed events:');
+                      this.myEvents.filter(e => e.message.confirmations.length).forEach(e => {
+                        let player = null;
+                        let card = null;
+
+                        if (e.message.data && e.message.data.playerId) {
+                          player = this.players.find(p => p.id === e.message.data.playerId);
+
+                          if (player && player.cardsInHand) {
+                            card = player.cardsInHand[e.message.data.index];
+                          }
+                        }
+
+                        console.log('       - ' + JSON.stringify({
+                          id: e.message.id,
+                          action: e.message.action,
+                          player: player ? player.name : '',
+                          card: card ? card.name : '',
+                        }, undefined, 4));
+                      });*/
+
                       if (this.currentRoom && this.currentRoom.players && this.currentRoom.players.length > 1) {
                         let dateToCompare = new Date().getTime() - 5000;
                         let numberOfOtherNonComPlayers = this.currentRoom.players.filter(p => !p.com).length - 1;
                         let newPendingEvents = [];
 
-                        console.log('entrou em eventProcessingInterval');
-                        console.log('this.pendingEvents.length: ' + this.pendingEvents.length);
+                        /*console.log('entrou em eventProcessingInterval');
+                        console.log('this.pendingEvents.length: ' + this.pendingEvents.length);*/
 
-                        this.pendingEvents.forEach(e => { debugger;
+                        this.pendingEvents.forEach(e => { //debugger;
                           /*console.log('e:');
                           console.log(e.message.id);
                           console.log(e.message.action);
@@ -2256,22 +2342,22 @@
                             console.log(pe.message.data.playerId);
                           });*/
 
-                          if (!this.processedEvents.find(pe => pe.message.id === e.message.id)) { debugger;
+                          /*if (!this.processedEvents.find(pe => pe.message.id === e.message.id)) { debugger;
                             this.handleCurrentRoomEvent(e.message);
                             debugger;
                             if (!this.processedEvents.find(pe => pe.message.id === e.message.id)) { debugger;
                               newPendingEvents.push(e);
                             } debugger;
-                          }
+                          }*/
                         });
-                        console.log('newPendingEvents.length: ' + newPendingEvents.length);
-                        this.pendingEvents = newPendingEvents;
+                        //console.log('newPendingEvents.length: ' + newPendingEvents.length);
+                        //this.pendingEvents = newPendingEvents;
 
                         let unconfirmedEvents = this.myEvents.filter(e => {
                           return e.message.confirmations.length < numberOfOtherNonComPlayers 
                             && dateToCompare >= e.message.createdAt;
                         });
-
+                        //console.log('unconfirmedEvents: ' + unconfirmedEvents);
                         unconfirmedEvents.forEach(e => {
                           this.sendEvent(e);
                         });
@@ -2280,7 +2366,7 @@
                   }
                 },
                 stopEventProcessingInterval() {
-                  if (this.eventProcessingIntervalId != null) {
+                  if (this.eventProcessingIntervalId != null) { //debugger;
                     this.myEvents = [];
                     this.processedEvents = [];
                     this.pendingEvents = [];
@@ -2290,11 +2376,11 @@
                   }
                 },
                 checkDependenciesSatisfied(data) {
-                  console.log('entrou em checkDependenciesSatisfied');
+                  //console.log('entrou em checkDependenciesSatisfied');
                   if (['confirmation', 'chatMessage'].includes(data.action)) {
                     return true;
                   }
-                  debugger;
+                  //debugger;
                   if (data.action === 'gameStart') {
                     return this.currentPage === 'room'
                   } else {
@@ -2306,7 +2392,7 @@
                       let index = this.eventActionSequence.findIndex(a => a === data.action);
 
                       for (let i = index - 1; i > -1; i--) {
-                        if (!this.processedEventActions.includes(this.eventActionSequence[i])) { debugger;
+                        if (!this.processedEventActions.includes(this.eventActionSequence[i])) { //debugger;
                           return false;
                         }
                       }
@@ -2316,6 +2402,25 @@
                   }
 
                   return false;
+                },
+                logEvent(e) {
+                  let player = null;
+                  let card = null;
+
+                  if (e.message.data && e.message.data.playerId) {
+                    player = this.players.find(p => p.id === e.message.data.playerId);
+
+                    if (player && player.cardsInHand) {
+                      card = player.cardsInHand[e.message.data.index];
+                    }
+                  }
+
+                  console.log('       - ' + JSON.stringify({
+                    id: e.message.id,
+                    action: e.message.action,
+                    player: player ? player.name : '',
+                    card: card ? card.name : '',
+                  }, undefined, 4));
                 }
             },
             computed: {
