@@ -647,10 +647,8 @@
                   }              
                 },
                 listenToRoomChannel() {
-                  this.socket.on(this.currentRoom.id, data => { // Remover após testado
-                    if (this.getRandomArbitrary(1, 3) !== 1) {
-                      this.handleCurrentRoomEvent(data);
-                    }
+                  this.socket.on(this.currentRoom.id, data => {
+                    this.handleCurrentRoomEvent(data);
                   });
                 },
                 goToNextTurn() {
