@@ -51,7 +51,7 @@
 
         <p v-if="currentPage === 'howtoplay'" class="text-center">
           <img :src="'assets/img/how-to-play/how-to-play-' + (howToPlayIndex + 1) + '.png'"
-              class="col-auto" :height="window.innerHeight * 0.9">
+              class="col-auto" :height="howToPlayHeight">
         </p>
 
         <div v-if="currentPage === 'lobby'">
@@ -531,7 +531,8 @@
                   'allPlayersSelectedPlayOrPass',
                   'playCard'
                 ],
-                processedEventActions: []
+                processedEventActions: [],
+                howToPlayHeight: 0
             },
             mounted() {
                 /*let playerId = localStorage.getItem('playerId');
@@ -557,8 +558,15 @@
                 if (this.isMobile) {
                   this.windowHeight -= 20;
                 }
-
+                
                 this.isScreenPortrait = window.innerWidth < window.innerHeight;
+                this.howToPlayHeight = window.innerHeight * 0.9;
+
+                if (this.isScreenPortrait) {
+                  let howToPlayWidth = window.innerWidth * 0.9;
+                  this.howToPlayHeight = (howToPlayWidth * 768) / 1024;
+                }
+
                 this.setCardSize();
                 
                 if (this.isMobile && !this.requestFullScreenButtonPressed) {
