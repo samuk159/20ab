@@ -345,7 +345,7 @@
             </div>
         </div>
 
-        <button v-if="currentPage === 'menu' && !isScreenPortrait && (!isMobile || requestFullScreenButtonPressed)" 
+        <button v-if="currentPage === 'menu' && (!isMobile || requestFullScreenButtonPressed)" 
           @click="goToPage('howtoplay')" type="button" class="btn btn-info col-auto" id="how-to-play-button">
           Como jogar
         </button>
